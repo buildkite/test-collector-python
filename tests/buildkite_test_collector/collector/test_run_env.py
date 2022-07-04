@@ -3,7 +3,7 @@ from uuid import uuid4, UUID
 import os
 import mock
 
-from buildkite_test_collector.collector.run_env import RuntimeEnvironment, detect_env
+from buildkite_test_collector.collector.run_env import detect_env
 
 
 def test_detect_env_with_no_env_returns_none():

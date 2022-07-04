@@ -1,9 +1,10 @@
-import pytest
 
-from datetime import datetime, timedelta
-from uuid import uuid4
-from random import randint
 from dataclasses import replace
+from datetime import datetime, timedelta
+from random import randint
+from uuid import uuid4
+
+import pytest
 
 from buildkite_test_collector.collector.payload import TestData, TestResultPassed, TestHistory, Payload, TestResultFailed, TestResultSkipped
 from buildkite_test_collector.collector.run_env import RuntimeEnvironment
@@ -48,11 +49,10 @@ def incomplete_test(history_started) -> TestData:
 @pytest.fixture
 def history_started() -> TestHistory:
     return TestHistory(
-        section="top",
         start_at=datetime.utcnow(),
         end_at=None,
         duration=None,
-        children=[]
+        children=()
     )
 
 
@@ -63,11 +63,10 @@ def history_finished() -> TestHistory:
     end_at = start_at + duration
 
     return TestHistory(
-        section="top",
         start_at=start_at,
         end_at=end_at,
         duration=duration,
-        children=[]
+        children=()
     )
 
 

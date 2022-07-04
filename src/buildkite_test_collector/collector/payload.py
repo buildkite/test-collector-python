@@ -1,7 +1,7 @@
 """Buildkite Test Analytics payload"""
 
 from dataclasses import dataclass, replace
-from typing import Dict, Tuple, Optional, Union
+from typing import Dict, Tuple, Optional, Union, Literal
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -30,29 +30,64 @@ class TestResultSkipped:
 
 
 @dataclass(frozen=True)
-class TestHistory:
+class TestSpan:
     """
     A test span.
 
     Buildkite Test Analtics supports some basic tracing to allow insight into
-    the runtime performance your tests.  All test results contain a "top"
-    history, but you can nest additional trace spans in the `children` property
-    as required.
+    the runtime performance your tests.
     """
-    section: str
+    section: Literal['http', 'sql', 'sleep', 'annotation']
+    duration: timedelta
+    start_at: Optional[datetime] = None
+    end_at: Optional[datetime] = None
+    detail: Optional[str] = None
+
+    def as_json(self, started_at: datetime) -> JsonDict:
+        """Convert this span into a Dict for eventual serialisation into JSON"""
+        attrs = {
+            "section": self.section,
+            "duration": self.duration.total_seconds()
+        }
+
+        if self.detail is not None:
+            attrs["detail"] = self.detail
+
+        if self.start_at is not None:
+            attrs["start_at"] = (self.start_at - started_at).total_seconds()
+
+        if self.end_at is not None:
+            attrs["end_at"] = (self.end_at - started_at).total_seconds()
+
+        return attrs
+
+
+@dataclass(frozen=True)
+class TestHistory:
+    """
+    The timings of the test execution.
+
+    Buildkite Test Analtics supports some basic tracing to allow insight into
+    the runtime performance your tests.  This object is the top-level of that
+    tracing tree.
+    """
     start_at: Optional[datetime] = None
     end_at: Optional[datetime] = None
     duration: Optional[timedelta] = None
-    children: Tuple['TestHistory'] = ()
+    children: Tuple['TestSpan'] = ()
 
     def is_finished(self) -> bool:
         """Is there an end_at time present?"""
         return self.end_at is not None
 
+    def push_span(self, span: TestSpan) -> 'TestHistory':
+        """Add a new span to the children"""
+        return replace(self, children=self.children + tuple([span]))
+
     def as_json(self, started_at: datetime) -> JsonDict:
         """Convert this trace into a Dict for eventual serialisation into JSON"""
         attrs = {
-            "section": self.section,
+            "section": "top",
             "children": tuple(map(lambda child: child.as_json(), self.children))
         }
 
@@ -93,10 +128,7 @@ class TestData:
             name=name,
             identifier=identifier,
             location=location,
-            history=TestHistory(
-                section="top",
-                start_at=datetime.utcnow()
-            )
+            history=TestHistory(start_at=datetime.utcnow())
         )
 
     def finish(self) -> 'TestData':
@@ -125,6 +157,10 @@ class TestData:
     def is_finished(self) -> bool:
         """Does this test have an end_at time?"""
         return self.history and self.history.is_finished()
+
+    def push_span(self, span: TestSpan) -> 'TestData':
+        """Add a span to the test history"""
+        return replace(self, history=self.history.push_span(span))
 
     def as_json(self, started_at: datetime) -> JsonDict:
         """Convert into a Dict suitable for eventual serialisation to JSON"""

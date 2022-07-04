@@ -1,13 +1,8 @@
-"""Buildkite test collector for Pytest."""
+"""Buildkite test collector plugin for Pytest"""
 
-from logging import warning
 from uuid import uuid4
 
-import pytest
-
-from .collector.payload import Payload, TestData
-from .collector.run_env import detect_env
-from .collector.api import submit
+from ..collector.payload import TestData
 
 
 class BuildkitePlugin:
@@ -16,6 +11,7 @@ class BuildkitePlugin:
     def __init__(self, payload):
         self.payload = payload
         self.in_flight = {}
+        self.spans = {}
 
     def pytest_runtestloop(self, session):
         """pytest_runtestloop hook callback"""
@@ -54,25 +50,3 @@ class BuildkitePlugin:
 
             del self.in_flight[nodeid]
             self.payload = self.payload.push_test_data(test_data)
-
-
-@pytest.hookimpl(trylast=True)
-def pytest_configure(config):
-    """pytest_configure hook callback"""
-    env = detect_env()
-
-    if env:
-        plugin = BuildkitePlugin(Payload.init(env))
-        setattr(config, '_buildkite', plugin)
-        config.pluginmanager.register(plugin)
-    else:
-        warning("Unable to detect CI environment.  No test analytics will be sent.")
-
-
-def pytest_unconfigure(config):
-    """pytest_unconfigure hook callback"""
-    plugin = getattr(config, '_buildkite', None)
-    if plugin:
-        submit(plugin.payload)
-        del config._buildkite
-        config.pluginmanager.unregister(plugin)

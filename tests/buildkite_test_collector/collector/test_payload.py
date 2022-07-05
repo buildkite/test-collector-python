@@ -4,6 +4,7 @@ from functools import reduce
 import pytest
 
 from buildkite_test_collector.collector.payload import Payload, TestHistory, TestData, TestResultFailed, TestResultPassed, TestResultSkipped
+from buildkite_test_collector.collector.instant import Instant
 
 
 def test_payload_init_has_empty_data(fake_env):
@@ -57,7 +58,7 @@ def test_payload_as_json(payload, successful_test):
 
 def test_test_history_with_no_end_at_is_not_finished():
     hist = TestHistory(
-        start_at=datetime.utcnow(),
+        start_at=Instant.now(),
         end_at=None,
         duration=None)
 
@@ -65,7 +66,7 @@ def test_test_history_with_no_end_at_is_not_finished():
 
 
 def test_test_history_with_end_at_is_finished():
-    start_at = datetime.utcnow()
+    start_at = Instant.now()
     duration = timedelta(minutes=2, seconds=18)
     end_at = start_at + duration
 
@@ -78,7 +79,7 @@ def test_test_history_with_end_at_is_finished():
 
 
 def test_test_history_as_json():
-    now = datetime.utcnow()
+    now = Instant.now()
     start_at = now + timedelta(minutes=1)
     duration = timedelta(minutes=2, seconds=18)
     end_at = start_at + duration
@@ -104,8 +105,8 @@ def test_test_data_start(successful_test):
                                identifier=successful_test.identifier,
                                location=successful_test.location)
 
-    assert test_data.history.start_at.timestamp(
-    ) == pytest.approx(datetime.now().timestamp(), 1.0)
+    assert test_data.history.start_at.seconds == pytest.approx(
+        Instant.now().seconds, 1.0)
 
 
 def test_test_data_finish_when_already_finished_is_a_noop(successful_test):
@@ -115,8 +116,8 @@ def test_test_data_finish_when_already_finished_is_a_noop(successful_test):
 def test_test_data_finish(incomplete_test):
     test_data = incomplete_test.finish()
 
-    assert test_data.history.end_at.timestamp() == pytest.approx(
-        datetime.now().timestamp(), 1.0)
+    assert test_data.history.end_at.seconds == pytest.approx(
+        Instant.now().seconds, 1.0)
     assert test_data.history.duration.total_seconds() == pytest.approx(0, abs=0.5)
 
 
@@ -140,7 +141,7 @@ def test_test_data_skipped(incomplete_test):
 
 
 def test_test_data_as_json(incomplete_test):
-    now = datetime.utcnow()
+    now = Instant.now()
     json = incomplete_test.as_json(now)
 
     assert json["id"] == str(incomplete_test.id)
@@ -152,19 +153,19 @@ def test_test_data_as_json(incomplete_test):
 
 
 def test_test_data_as_json_when_passed(successful_test):
-    json = successful_test.as_json(datetime.utcnow())
+    json = successful_test.as_json(Instant.now())
 
     assert json["result"] == "passed"
 
 
 def test_test_data_as_json_when_failed(failed_test):
-    json = failed_test.as_json(datetime.utcnow())
+    json = failed_test.as_json(Instant.now())
 
     assert json["result"] == "failed"
     assert json["failure_reason"] == failed_test.result.failure_reason
 
 
 def test_test_data_as_json_when_skipped(skipped_test):
-    json = skipped_test.as_json(datetime.utcnow())
+    json = skipped_test.as_json(Instant.now())
 
     assert json["result"] == "skipped"

@@ -1,6 +1,6 @@
 
 from dataclasses import replace
-from datetime import datetime, timedelta
+from datetime import timedelta
 from random import randint
 from uuid import uuid4
 
@@ -8,6 +8,7 @@ import pytest
 
 from buildkite_test_collector.collector.payload import TestData, TestResultPassed, TestHistory, Payload, TestResultFailed, TestResultSkipped
 from buildkite_test_collector.collector.run_env import RuntimeEnvironment
+from buildkite_test_collector.collector.instant import Instant
 
 
 @pytest.fixture
@@ -49,7 +50,7 @@ def incomplete_test(history_started) -> TestData:
 @pytest.fixture
 def history_started() -> TestHistory:
     return TestHistory(
-        start_at=datetime.utcnow(),
+        start_at=Instant.now(),
         end_at=None,
         duration=None,
         children=()
@@ -58,7 +59,7 @@ def history_started() -> TestHistory:
 
 @pytest.fixture
 def history_finished() -> TestHistory:
-    start_at = datetime.utcnow()
+    start_at = Instant.now()
     duration = timedelta(minutes=2, seconds=18)
     end_at = start_at + duration
 

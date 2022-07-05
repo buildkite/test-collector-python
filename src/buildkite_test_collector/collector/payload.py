@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass, replace
 from typing import Dict, Tuple, Optional, Union, Literal
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
+from .instant import Instant
 from .run_env import RuntimeEnvironment
 
 JsonValue = Union[str, int, float, bool, 'JsonDict', Tuple['JsonValue']]
@@ -39,11 +40,11 @@ class TestSpan:
     """
     section: Literal['http', 'sql', 'sleep', 'annotation']
     duration: timedelta
-    start_at: Optional[datetime] = None
-    end_at: Optional[datetime] = None
+    start_at: Optional[Instant] = None
+    end_at: Optional[Instant] = None
     detail: Optional[str] = None
 
-    def as_json(self, started_at: datetime) -> JsonDict:
+    def as_json(self, started_at: Instant) -> JsonDict:
         """Convert this span into a Dict for eventual serialisation into JSON"""
         attrs = {
             "section": self.section,
@@ -71,8 +72,8 @@ class TestHistory:
     the runtime performance your tests.  This object is the top-level of that
     tracing tree.
     """
-    start_at: Optional[datetime] = None
-    end_at: Optional[datetime] = None
+    start_at: Optional[Instant] = None
+    end_at: Optional[Instant] = None
     duration: Optional[timedelta] = None
     children: Tuple['TestSpan'] = ()
 
@@ -84,11 +85,11 @@ class TestHistory:
         """Add a new span to the children"""
         return replace(self, children=self.children + tuple([span]))
 
-    def as_json(self, started_at: datetime) -> JsonDict:
+    def as_json(self, started_at: Instant) -> JsonDict:
         """Convert this trace into a Dict for eventual serialisation into JSON"""
         attrs = {
             "section": "top",
-            "children": tuple(map(lambda child: child.as_json(), self.children))
+            "children": tuple(map(lambda span: span.as_json(started_at), self.children))
         }
 
         if self.start_at is not None:
@@ -128,7 +129,7 @@ class TestData:
             name=name,
             identifier=identifier,
             location=location,
-            history=TestHistory(start_at=datetime.utcnow())
+            history=TestHistory(start_at=Instant.now())
         )
 
     def finish(self) -> 'TestData':
@@ -136,7 +137,7 @@ class TestData:
         if self.is_finished():
             return self
 
-        end_at = datetime.utcnow()
+        end_at = Instant.now()
         duration = end_at - self.history.start_at
         return replace(self, history=replace(self.history,
                                              end_at=end_at,
@@ -162,7 +163,7 @@ class TestData:
         """Add a span to the test history"""
         return replace(self, history=self.history.push_span(span))
 
-    def as_json(self, started_at: datetime) -> JsonDict:
+    def as_json(self, started_at: Instant) -> JsonDict:
         """Convert into a Dict suitable for eventual serialisation to JSON"""
         attrs = {
             "id": str(self.id),
@@ -192,8 +193,8 @@ class Payload:
     """The full test analytics payload"""
     run_env: RuntimeEnvironment
     data: Tuple[TestData]
-    started_at: Optional[datetime]
-    finished_at: Optional[datetime]
+    started_at: Optional[Instant]
+    finished_at: Optional[Instant]
 
     @classmethod
     def init(cls, run_env: RuntimeEnvironment) -> 'Payload':
@@ -224,7 +225,7 @@ class Payload:
 
     def started(self) -> 'Payload':
         """Mark the payload as started (ie the suite has started)"""
-        return replace(self, started_at=datetime.utcnow())
+        return replace(self, started_at=Instant.now())
 
     def into_batches(self, batch_size=100) -> Tuple['Payload']:
         """Convert the payload into a collection of payloads based on the batch size"""

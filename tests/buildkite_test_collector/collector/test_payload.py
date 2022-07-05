@@ -57,7 +57,6 @@ def test_payload_as_json(payload, successful_test):
 
 def test_test_history_with_no_end_at_is_not_finished():
     hist = TestHistory(
-        section="top",
         start_at=datetime.utcnow(),
         end_at=None,
         duration=None)
@@ -71,7 +70,6 @@ def test_test_history_with_end_at_is_finished():
     end_at = start_at + duration
 
     hist = TestHistory(
-        section="top",
         start_at=start_at,
         end_at=end_at,
         duration=duration)
@@ -86,14 +84,13 @@ def test_test_history_as_json():
     end_at = start_at + duration
 
     hist = TestHistory(
-        section="top",
         start_at=start_at,
         end_at=end_at,
         duration=duration)
 
     json = hist.as_json(now)
 
-    assert json["section"] == hist.section
+    assert json["section"] == "top"
     assert json["start_at"] == 60
     assert json["end_at"] == 198
     assert json["duration"] == 138
@@ -107,9 +104,8 @@ def test_test_data_start(successful_test):
                                identifier=successful_test.identifier,
                                location=successful_test.location)
 
-    assert test_data.history.section == "top"
-    assert test_data.history.start_at.timestamp() == \
-        pytest.approx(datetime.now().timestamp(), 1.0)
+    assert test_data.history.start_at.timestamp(
+    ) == pytest.approx(datetime.now().timestamp(), 1.0)
 
 
 def test_test_data_finish_when_already_finished_is_a_noop(successful_test):
@@ -119,10 +115,9 @@ def test_test_data_finish_when_already_finished_is_a_noop(successful_test):
 def test_test_data_finish(incomplete_test):
     test_data = incomplete_test.finish()
 
-    assert test_data.history.end_at.timestamp() == \
-        pytest.approx(datetime.now().timestamp(), 1.0)
-    assert test_data.history.duration.total_seconds() == \
-        pytest.approx(0, abs=0.5)
+    assert test_data.history.end_at.timestamp() == pytest.approx(
+        datetime.now().timestamp(), 1.0)
+    assert test_data.history.duration.total_seconds() == pytest.approx(0, abs=0.5)
 
 
 def test_test_data_passed(incomplete_test):

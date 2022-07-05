@@ -37,6 +37,9 @@ $ pytest
 
 If all is well, you should see the test run in the test analytics section of the Buildkite dashboard.
 
+## 🎢 Tracing
+
+Buildkite Test Analytics has support for tracing potentially slow operations within your tests (SQL queries, HTTP requests, etc).  This library now supports the ability to add tracing information to your test analytics output by using the new `spans` pytest fixture.  See the `SpanCollector` documentation for more information.
 
 ## 🔜 Roadmap
 

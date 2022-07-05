@@ -2,10 +2,10 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Literal, Optional, Any
 
 from ..collector.payload import TestSpan, TestData
+from ..collector.instant import Instant
 from .buildkite_plugin import BuildkitePlugin
 
 
@@ -44,12 +44,12 @@ class SpanCollector:
                 with spans.measure('http', 'The koan of Github'):
                     requests.get("https://api.github.com/zen")
         """
-        start_at = datetime.utcnow()
+        start_at = Instant.now()
         try:
             yield
 
         finally:
-            end_at = datetime.utcnow()
+            end_at = Instant.now()
 
             self.record(TestSpan(section=section, detail=detail,
                         start_at=start_at, end_at=end_at, duration=end_at - start_at))

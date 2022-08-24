@@ -2,6 +2,8 @@
 
 The official Python adapter for [Buildkite Test Analytics](https://buildkite.com/test-analytics) which collects information about your tests.
 
+**Supported python versions:** >=3.8
+
 ⚒ **Supported test frameworks:** pytest.
 
 📦 **Supported CI systems:** Buildkite, GitHub Actions, CircleCI, and others via the `BUILDKITE_ANALYTICS_*` environment variables.

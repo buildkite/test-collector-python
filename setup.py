@@ -32,4 +32,5 @@ setup(name='buildkite-test-collector',
       },
       entry_points={
           "pytest11": ["buildkite-test-collector = buildkite_test_collector.pytest_plugin"]
-      })
+      },
+      python_requires=">=3.8")

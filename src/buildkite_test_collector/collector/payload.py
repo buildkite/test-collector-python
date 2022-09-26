@@ -223,6 +223,10 @@ class Payload:
         """Append a test-data to the payload"""
         return replace(self, data=self.data + tuple([report]))
 
+    def is_started(self) -> bool:
+        """Returns true of the payload has been started"""
+        return self.started_at is not None
+
     def started(self) -> 'Payload':
         """Mark the payload as started (ie the suite has started)"""
         return replace(self, started_at=Instant.now())

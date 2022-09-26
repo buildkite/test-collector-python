@@ -13,13 +13,11 @@ class BuildkitePlugin:
         self.in_flight = {}
         self.spans = {}
 
-    def pytest_runtestloop(self, session):
-        """pytest_runtestloop hook callback"""
-        _pylint_ignore = session
-        self.payload = self.payload.started()
-
     def pytest_runtest_logstart(self, nodeid, location):
         """pytest_runtest_logstart hook callback"""
+        if not self.payload.is_started():
+            self.payload = self.payload.started()
+
         chunks = nodeid.split("::")
         scope = "::".join(chunks[:-1])
         name = chunks[-1]

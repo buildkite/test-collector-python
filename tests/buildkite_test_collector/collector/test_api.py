@@ -16,6 +16,13 @@ def test_submit_with_missing_api_key_environment_variable_returns_none():
         assert submit(payload) is None
 
 
+def test_submit_with_invalid_api_key_environment_variable_returns_none():
+    with mock.patch.dict(os.environ, {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": "\n"}):
+        payload = Payload.init(detect_env())
+
+        assert submit(payload) is None
+
+
 @responses.activate
 def test_submit_with_payload_returns_an_api_response(successful_test):
     responses.add(

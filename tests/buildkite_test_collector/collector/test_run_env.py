@@ -3,6 +3,7 @@ from uuid import uuid4, UUID
 import os
 import mock
 
+from buildkite_test_collector.collector.constants import COLLECTOR_NAME, VERSION # pylint: disable=W0611
 from buildkite_test_collector.collector.run_env import detect_env
 
 
@@ -67,7 +68,6 @@ def test_detect_env_with_github_actions_env_vars_returns_the_correct_environment
         assert runtime_env.job_id is None
         assert runtime_env.message is None
 
-
 def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
     build_num = str(randint(0, 1000))
     workflow_id = str(uuid4())
@@ -93,7 +93,6 @@ def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
         assert runtime_env.job_id is None
         assert runtime_env.message is None
 
-
 def test_detect_env_with_generic_env_vars():
     env = {
         "CI": "true"
@@ -111,7 +110,6 @@ def test_detect_env_with_generic_env_vars():
         assert runtime_env.job_id is None
         assert runtime_env.message is None
 
-
 def test_env_as_json(fake_env):
     json = fake_env.as_json()
 
@@ -123,3 +121,5 @@ def test_env_as_json(fake_env):
     assert json["commit_sha"] == fake_env.commit_sha
     assert json["message"] == fake_env.message
     assert json["url"] == fake_env.url
+    assert json["collector"] == 'python-{COLLECTOR_NAME}'
+    assert json["version"] == VERSION

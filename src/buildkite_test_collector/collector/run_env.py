@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Dict, Optional
 from uuid import uuid4
-
 import os
+from .constants import COLLECTOR_NAME, VERSION # pylint: disable=W0611
 
 # pylint: disable=C0103 disable=R0902
 
@@ -115,7 +115,9 @@ class RuntimeEnvironment:
             "branch": self.branch,
             "commit_sha": self.commit_sha,
             "message": self.message,
-            "url": self.url
+            "url": self.url,
+            "collector": 'python-{COLLECTOR_NAME}',
+            "version": VERSION
         }
 
         return {k: v for k, v in attrs.items() if v is not None}

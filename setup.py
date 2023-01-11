@@ -1,10 +1,11 @@
 from setuptools import setup, find_packages
+from src.buildkite_test_collector.collector import constants
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name='buildkite-test-collector',
-      version='0.1.4',
+setup(name=constants.COLLECTOR_NAME,
+      version=constants.VERSION,
       description='Buildkite Test Analytics collector',
       long_description=long_description,
       long_description_content_type='text/markdown',

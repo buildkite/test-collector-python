@@ -116,7 +116,7 @@ class RuntimeEnvironment:
             "commit_sha": self.commit_sha,
             "message": self.message,
             "url": self.url,
-            "collector": 'python-{COLLECTOR_NAME}',
+            "collector": f"python-{COLLECTOR_NAME}",
             "version": VERSION
         }
 

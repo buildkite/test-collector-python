@@ -121,5 +121,5 @@ def test_env_as_json(fake_env):
     assert json["commit_sha"] == fake_env.commit_sha
     assert json["message"] == fake_env.message
     assert json["url"] == fake_env.url
-    assert json["collector"] == 'python-{COLLECTOR_NAME}'
+    assert json["collector"] == 'python-buildkite-test-collector'
     assert json["version"] == VERSION

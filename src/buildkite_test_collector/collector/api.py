@@ -6,6 +6,7 @@ from sys import stderr
 from requests import post, Response
 from requests.exceptions import InvalidHeader
 from .payload import Payload
+import traceback
 
 
 def submit(payload: Payload, batch_size=100) -> Optional[Response]:
@@ -32,5 +33,8 @@ def submit(payload: Payload, batch_size=100) -> Optional[Response]:
         except InvalidHeader as error:
             print("Warning: Invalid `BUILDKITE_ANALYTICS_TOKEN` environment variable", file=stderr)
             print(error, file=stderr)
+        except Exception:
+            error_message = traceback.format_exc()
+            print(error_message, file=stderr)
 
     return response

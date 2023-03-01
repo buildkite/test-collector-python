@@ -7,6 +7,7 @@ import responses
 from buildkite_test_collector.collector.run_env import detect_env
 from buildkite_test_collector.collector.api import submit
 from buildkite_test_collector.collector.payload import Payload
+from requests.exceptions import ReadTimeout, ConnectTimeout
 
 
 def test_submit_with_missing_api_key_environment_variable_returns_none():
@@ -22,6 +23,43 @@ def test_submit_with_invalid_api_key_environment_variable_returns_none():
 
         assert submit(payload) is None
 
+@responses.activate
+def test_submit_with_payload_timeout_captures_ConnectTimeout_error(capfd, successful_test):
+    responses.add(
+        responses.POST,
+        "https://analytics-api.buildkite.com/v1/uploads",
+        body=ConnectTimeout("Error"))
+
+    with mock.patch.dict(os.environ, {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}):
+        payload = Payload.init(detect_env())
+        payload = Payload.started(payload)
+
+        payload = payload.push_test_data(successful_test)
+
+        result = submit(payload)
+        captured = capfd.readouterr()
+
+        assert captured.err.startswith("Traceback")
+        assert "ConnectTimeout" in captured.err
+
+@responses.activate
+def test_submit_with_payload_timeout_captures_ReadTimeout_error(capfd, successful_test):
+    responses.add(
+        responses.POST,
+        "https://analytics-api.buildkite.com/v1/uploads",
+        body=ReadTimeout("Error"))
+
+    with mock.patch.dict(os.environ, {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}):
+        payload = Payload.init(detect_env())
+        payload = Payload.started(payload)
+
+        payload = payload.push_test_data(successful_test)
+
+        result = submit(payload)
+        captured = capfd.readouterr()
+
+        assert captured.err.startswith("Traceback")
+        assert "ReadTimeout" in captured.err
 
 @responses.activate
 def test_submit_with_payload_returns_an_api_response(successful_test):

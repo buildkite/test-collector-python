@@ -17,7 +17,6 @@ def successful_test(history_finished) -> TestData:
         id=uuid4(),
         scope="wyld stallyns",
         name="san dimas meltdown",
-        identifier="wyld stallyns :: san dimas meltdown",
         location="san_dimas_meltdown.py:1",
         result=TestResultPassed(),
         history=history_finished
@@ -40,7 +39,6 @@ def incomplete_test(history_started) -> TestData:
         id=uuid4(),
         scope="wyld stallyns",
         name="san dimas meltdown",
-        identifier="wyld stallyns :: san dimas meltdown",
         location="san_dimas_meltdown.py:1",
         result=None,
         history=history_started

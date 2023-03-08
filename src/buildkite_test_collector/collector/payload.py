@@ -110,7 +110,6 @@ class TestData:
     id: UUID
     scope: str
     name: str
-    identifier: str
     history: TestHistory
     location: Optional[str] = None
     result: Union[TestResultPassed, TestResultFailed,
@@ -120,14 +119,12 @@ class TestData:
     def start(cls, id: UUID,
               scope: str,
               name: str,
-              identifier: str,
               location: Optional[str] = None) -> 'TestData':
         """Build a new instance with it's start_at time set to now"""
         return cls(
             id=id,
             scope=scope,
             name=name,
-            identifier=identifier,
             location=location,
             history=TestHistory(start_at=Instant.now())
         )
@@ -169,7 +166,6 @@ class TestData:
             "id": str(self.id),
             "scope": self.scope,
             "name": self.name,
-            "identifier": self.identifier,
             "location": self.location,
             "history": self.history.as_json(started_at)
         }

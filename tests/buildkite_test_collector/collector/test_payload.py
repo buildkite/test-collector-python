@@ -102,7 +102,6 @@ def test_test_data_start(successful_test):
     test_data = TestData.start(id=successful_test.id,
                                scope=successful_test.scope,
                                name=successful_test.name,
-                               identifier=successful_test.identifier,
                                location=successful_test.location)
 
     assert test_data.history.start_at.seconds == pytest.approx(
@@ -147,7 +146,6 @@ def test_test_data_as_json(incomplete_test):
     assert json["id"] == str(incomplete_test.id)
     assert json["scope"] == incomplete_test.scope
     assert json["name"] == incomplete_test.name
-    assert json["identifier"] == incomplete_test.identifier
     assert json["location"] == incomplete_test.location
     assert json["history"] == incomplete_test.history.as_json(now)
 

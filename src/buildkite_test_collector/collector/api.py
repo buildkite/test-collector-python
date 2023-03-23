@@ -3,6 +3,7 @@
 from typing import Optional
 from os import environ
 from sys import stderr
+import traceback
 from requests import post, Response
 from requests.exceptions import InvalidHeader
 from .payload import Payload
@@ -26,11 +27,14 @@ def submit(payload: Payload, batch_size=100) -> Optional[Response]:
                                     "Content-Type": "application/json",
                                     "Authorization": f"Token token=\"{token}\""
                                 },
-                                timeout=30)
+                                timeout=60)
                 if response.status_code >= 300:
                     return response
         except InvalidHeader as error:
             print("Warning: Invalid `BUILDKITE_ANALYTICS_TOKEN` environment variable", file=stderr)
             print(error, file=stderr)
+        except Exception: # pylint: disable=broad-except
+            error_message = traceback.format_exc()
+            print(error_message, file=stderr)
 
     return response

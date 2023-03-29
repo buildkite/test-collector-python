@@ -41,7 +41,16 @@ If all is well, you should see the test run in the test analytics section of the
 
 ## 🎢 Tracing
 
-Buildkite Test Analytics has support for tracing potentially slow operations within your tests (SQL queries, HTTP requests, etc).  This library now supports the ability to add tracing information to your test analytics output by using the new `spans` pytest fixture.  See the `SpanCollector` documentation for more information.
+The Buildkite Test Analytics REST API has support for tracing potentially slow operations within your tests, and can collect span data of [four types](https://buildkite.com/docs/test-analytics/importing-json#json-test-results-data-reference-span-objects): http, sql, sleep and annotations. This is documented as part of our public JSON API so anyone can instrument any code to send this data.
+
+This library supports the ability to transmit tracing information to your Test Analytics output by using the new `spans` pytest fixture.  See [the `SpanCollector` documentation](https://github.com/buildkite/test-collector-python/blob/main/src/buildkite_test_collector/pytest_plugin/span_collector.py) for more information.
+
+You may also need to manually capture the data you wish to trace for your use case. For examples of how we've done this in our Ruby test collector, see:
+- [Instrumenting Rails to capture sql data](https://github.com/buildkite/test-collector-ruby/blob/9ac2b465cad647790d89b501a1754b06e47d5997/lib/buildkite/test_collector.rb#L107)
+- [Monkey patching to various libraries to capture http requests](https://github.com/buildkite/test-collector-ruby/blob/9ac2b465cad647790d89b501a1754b06e47d5997/lib/buildkite/test_collector/network.rb#L58)
+- [Monkey patching for sleep](https://github.com/buildkite/test-collector-ruby/blob/9ac2b465cad647790d89b501a1754b06e47d5997/lib/buildkite/test_collector/object.rb#L20)
+
+Note: the Ruby test collector is the only Test Analytics collector that automatically captures and transmits span data. This Python collector can transmit information, but data capture must be done manually at this time.
 
 ## 🔜 Roadmap
 

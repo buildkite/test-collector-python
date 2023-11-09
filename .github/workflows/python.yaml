@@ -19,7 +19,7 @@ jobs:
       BUILDKITE_ANALYTICS_TOKEN: ${{ secrets.BUILDKITE_ANALYTICS_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
@@ -36,7 +36,7 @@ jobs:
         python-version: [ '3.8', '3.9', '3.10' ]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}

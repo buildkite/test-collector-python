@@ -22,6 +22,11 @@ The official Python adapter for [Buildkite Test Analytics](https://buildkite.com
             ]
         }
 ```
+or install via `conda`
+
+```shell
+conda install -c conda-forge buildkite-test-collector
+```
 
 3. Set up your API token
 

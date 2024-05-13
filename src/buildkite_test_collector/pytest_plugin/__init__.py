@@ -1,6 +1,7 @@
 """Buildkite test collector for Pytest."""
 
 from logging import warning
+from os import environ
 
 import pytest
 
@@ -24,12 +25,13 @@ def spans(request):
 def pytest_configure(config):
     """pytest_configure hook callback"""
     env = detect_env()
+    debug = environ.get("BUILDKITE_ANALYTICS_DEBUG_ENABLED")
 
     if env:
         plugin = BuildkitePlugin(Payload.init(env))
         setattr(config, '_buildkite', plugin)
         config.pluginmanager.register(plugin)
-    else:
+    elif debug:
         warning("Unable to detect CI environment.  No test analytics will be sent.")
 
 

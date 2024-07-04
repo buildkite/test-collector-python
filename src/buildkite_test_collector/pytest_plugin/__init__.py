@@ -39,7 +39,7 @@ def pytest_configure(config):
 def pytest_unconfigure(config):
     """pytest_unconfigure hook callback"""
     plugin = getattr(config, '_buildkite', None)
-    if plugin:
+    if plugin and not hasattr(config, "workerinput"):
         submit(plugin.payload)
         del config._buildkite
         config.pluginmanager.unregister(plugin)

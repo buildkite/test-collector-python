@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """Buildkite test collector for Pytest."""
 
 from logging import warning
@@ -39,7 +40,13 @@ def pytest_configure(config):
 def pytest_unconfigure(config):
     """pytest_unconfigure hook callback"""
     plugin = getattr(config, '_buildkite', None)
-    if plugin and not hasattr(config, "workerinput"):
-        submit(plugin.payload)
+
+    if plugin:
+        # Only submit if this is not an xdist worker,
+        # this prevents duplicate payload submissions
+        # see https://github.com/pytest-dev/pytest-xdist/blob/fabdbe3fd2dbaf0e2764697ba4c79938d565dc44/src/xdist/plugin.py#L305
+        if not hasattr(config, "workerinput"):
+            submit(plugin.payload)
+
         del config._buildkite
         config.pluginmanager.unregister(plugin)

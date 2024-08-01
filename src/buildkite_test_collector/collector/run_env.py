@@ -54,7 +54,7 @@ def __github_actions_env() -> Optional['RuntimeEnvironment']:
         commit_sha=__get_env("GITHUB_SHA"),
         number=run_number,
         job_id=None,
-        message=None
+        message=__get_env("TEST_ANALYTICS_COMMIT_MESSAGE")
     )
 
 
@@ -73,7 +73,7 @@ def __circle_ci_env() -> Optional['RuntimeEnvironment']:
         commit_sha=__get_env("CIRCLE_SHA1"),
         number=build_num,
         job_id=None,
-        message=None
+        message=__get_env("TEST_ANALYTICS_COMMIT_MESSAGE")
     )
 
 

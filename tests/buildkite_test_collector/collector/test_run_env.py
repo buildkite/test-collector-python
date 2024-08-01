@@ -93,7 +93,7 @@ def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
         assert runtime_env.commit_sha == commit
         assert runtime_env.number == build_num
         assert runtime_env.job_id is None
-        assert runtime_env.message is None
+        assert runtime_env.message is "excellent adventure"
 
 def test_detect_env_with_generic_env_vars():
     env = {

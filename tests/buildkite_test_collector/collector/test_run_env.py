@@ -54,6 +54,7 @@ def test_detect_env_with_github_actions_env_vars_returns_the_correct_environment
         "GITHUB_RUN_ID": run_id,
         "GITHUB_REF": "rufus",
         "GITHUB_SHA": commit,
+        "TEST_ANALYTICS_COMMIT_MESSAGE": "excellent adventure"
     }
 
     with mock.patch.dict(os.environ, env, clear=True):
@@ -66,7 +67,7 @@ def test_detect_env_with_github_actions_env_vars_returns_the_correct_environment
         assert runtime_env.commit_sha == commit
         assert runtime_env.number == run_number
         assert runtime_env.job_id is None
-        assert runtime_env.message is None
+        assert runtime_env.message == "excellent adventure"
 
 def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
     build_num = str(randint(0, 1000))
@@ -78,7 +79,8 @@ def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
         "CIRCLE_WORKFLOW_ID": workflow_id,
         "CIRCLE_BUILD_URL": "https://example.test/circle",
         "CIRCLE_BRANCH": "rufus",
-        "CIRCLE_SHA1": commit
+        "CIRCLE_SHA1": commit,
+        "TEST_ANALYTICS_COMMIT_MESSAGE": "excellent adventure"
     }
 
     with mock.patch.dict(os.environ, env, clear=True):
@@ -91,7 +93,7 @@ def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
         assert runtime_env.commit_sha == commit
         assert runtime_env.number == build_num
         assert runtime_env.job_id is None
-        assert runtime_env.message is None
+        assert runtime_env.message == "excellent adventure"
 
 def test_detect_env_with_generic_env_vars():
     env = {

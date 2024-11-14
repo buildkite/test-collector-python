@@ -13,6 +13,7 @@ def submit(payload: Payload, batch_size=100) -> Optional[Response]:
     """Submit a payload to the API"""
     token = environ.get("BUILDKITE_ANALYTICS_TOKEN")
     debug = environ.get("BUILDKITE_ANALYTICS_DEBUG_ENABLED")
+    api_url = environ.get("BUILDKITE_ANALYTICS_API_URL", "https://analytics-api.buildkite.com/v1")
     response = None
 
     if debug and not token:
@@ -21,7 +22,7 @@ def submit(payload: Payload, batch_size=100) -> Optional[Response]:
     if token:
         try:
             for payload_slice in payload.into_batches(batch_size):
-                response = post("https://analytics-api.buildkite.com/v1/uploads",
+                response = post(api_url + "/uploads",
                                 json=payload_slice.as_json(),
                                 headers={
                                     "Content-Type": "application/json",

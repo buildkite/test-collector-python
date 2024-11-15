@@ -132,3 +132,33 @@ def test_submit_with_large_payload_batches_requests(successful_test, failed_test
         json = result.json()
         assert len(json["errors"]) == 0
         assert json['queued'] == 1
+
+@responses.activate
+def test_api_url_override(successful_test):
+    upload_id = str(uuid4())
+
+    responses.add(
+        responses.POST,
+        "http://something-else.example.com/v1/uploads",
+        json={'upload_id': upload_id},
+        status=202)
+
+    env = {
+        "BUILDKITE_ANALYTICS_API_URL": "http://something-else.example.com/v1",
+        "CI": "true",
+        "BUILDKITE_ANALYTICS_TOKEN": str(uuid4()),
+    }
+
+    with mock.patch.dict(os.environ, env):
+        payload = Payload.init(detect_env())
+        payload = Payload.started(payload)
+
+        payload = payload.push_test_data(successful_test)
+
+        result = submit(payload)
+
+        assert result.status_code >= 200
+        assert result.status_code < 300
+
+        json = result.json()
+        assert json['upload_id'] == upload_id

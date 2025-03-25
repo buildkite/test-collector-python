@@ -147,6 +147,7 @@ def test_test_data_as_json(incomplete_test):
     assert json["scope"] == incomplete_test.scope
     assert json["name"] == incomplete_test.name
     assert json["location"] == incomplete_test.location
+    assert json["file_name"] == incomplete_test.file_name
     assert json["history"] == incomplete_test.history.as_json(now)
 
 

@@ -55,4 +55,4 @@ class BuildkitePlugin:
     def save_payload_as_json(self, path):
         """ Save payload into a json file """
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.payload.as_json(), f)
+            json.dump(self.payload.as_json()["data"], f)

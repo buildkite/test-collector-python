@@ -11,7 +11,7 @@ steps:
       TWINE_USERNAME: __token__
     plugins:
       - aws-assume-role-with-web-identity#v1.2.0:
-          role-arn: "arn:aws:iam::445615400570:role/pipeline-buildkite-test-collector-python-build"
+          role-arn: "arn:aws:iam::445615400570:role/pipeline-buildkite-test-collector-python-release"
           session-tags:
             - organization_slug
             - organization_id

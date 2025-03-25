@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__root="$(cd "$(dirname "${__dir}")"/../ && pwd)"
+
+cd "$__root"
+
+python -m venv .venv && source .venv/bin/activate
+
+pip install -e '.[dev]'
+
+# It will spit out a tar.gz in ./dist
+python -m build
+
+python -m twine check dist/*
+
+python -m twine upload --skip-existing dist/*

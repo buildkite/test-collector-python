@@ -84,15 +84,12 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/buildk
 
 ## 🚀 Releasing
 
-1. Version bump the code, tag and push.
-2. Publish to the [Python Package Index](https://pypi.org/):
-
-```sh
-python3 -m build
-python3 -m twine upload dist/*
-```
-
-3. Create a [new github release](https://github.com/buildkite/test-collector-python/releases).
+1. Open a new PR bumping the version number in `constants.py`.
+2. Get the PR approved and merged.
+3. Tag the merge commit with the same version number, then git push.
+4. Go to release pipeline and approve the pipeline to execute.
+5. (Optional) In the event of step 4 failure, run `.buildkite/steps/release-pypi` locally with your own credentials.
+6. Create a [new github release](https://github.com/buildkite/test-collector-python/releases).
 
 ## 📜 License
 

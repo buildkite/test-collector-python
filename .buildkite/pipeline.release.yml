@@ -1,0 +1,24 @@
+agents:
+  queue: hosted
+
+steps:
+  # This is most to prevent we accidentally tag things.
+  - block: "OK to release?"
+
+  - command: ".buildkite/steps/release-pypi"
+    label: ":pypi:"
+    if: build.tag != null
+    env:
+      # > The username to authenticate to the repository (package index) as. Has no effect on PyPI
+      # It should be a noop, I set it anyway to prevent prompt showing up.
+      TWINE_USERNAME: __token__
+    plugins:
+      - cluster-secrets#v1.0.0:
+          variables:
+            TWINE_PASSWORD: test-collector-python-pypi-api-token
+      - docker#v5.12.0:
+          image: "python:3.13"
+          environment:
+            - TWINE_USERNAME
+            - TWINE_PASSWORD
+

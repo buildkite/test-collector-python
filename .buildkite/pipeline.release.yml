@@ -2,22 +2,30 @@ agents:
   queue: hosted
 
 steps:
-  # This is most to prevent we accidentally tag things.
-  - block: "OK to release?"
-
   - command: ".buildkite/steps/release-pypi"
     label: ":pypi:"
-    if: build.tag != null
+    if: build.message =~ /\[release\]/i && build.branch == "main"
     env:
       # > The username to authenticate to the repository (package index) as. Has no effect on PyPI
       # It should be a noop, I set it anyway to prevent prompt showing up.
       TWINE_USERNAME: __token__
     plugins:
-      - cluster-secrets#v1.0.0:
-          variables:
-            TWINE_PASSWORD: test-collector-python-pypi-api-token
+      - aws-assume-role-with-web-identity#v1.2.0:
+          role-arn: "arn:aws:iam::445615400570:role/pipeline-buildkite-test-collector-python-build"
+          session-tags:
+            - organization_slug
+            - organization_id
+            - pipeline_slug
+            - build_branch
+      - aws-ssm#v1.0.0:
+          parameters:
+            TWINE_PASSWORD: /pipelines/buildkite/test-collector-python-release/pypi-api-token
+      - ecr#v2.9.0:
+          login: true
+          account_ids: "public.ecr.aws"
+          region: "us-east-1"
       - docker#v5.12.0:
-          image: "python:3.13"
+          image: "public.ecr.aws/docker/library/python:3.13.2-bookworm"
           environment:
             - TWINE_USERNAME
             - TWINE_PASSWORD

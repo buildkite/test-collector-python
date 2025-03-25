@@ -48,5 +48,21 @@ def pytest_unconfigure(config):
         if not hasattr(config, "workerinput"):
             submit(plugin.payload)
 
+        jsonpath = config.option.jsonpath
+        if jsonpath:
+            plugin.save_payload_as_json(jsonpath)
+
         del config._buildkite
         config.pluginmanager.unregister(plugin)
+
+def pytest_addoption(parser):
+    """add custom option to pytest"""
+    group = parser.getgroup('buildkite', 'Buildkite Test Collector')
+    group.addoption(
+        '--json',
+        default=None,
+        action='store',
+        dest="jsonpath",
+        metavar="path",
+        help='save json file at given path'
+    )

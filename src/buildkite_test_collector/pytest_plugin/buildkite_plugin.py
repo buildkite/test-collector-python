@@ -1,9 +1,9 @@
 """Buildkite test collector plugin for Pytest"""
+import json
 
 from uuid import uuid4
 
 from ..collector.payload import TestData
-
 
 class BuildkitePlugin:
     """Buildkite test collector plugin for Pytest"""
@@ -51,3 +51,8 @@ class BuildkitePlugin:
 
             del self.in_flight[nodeid]
             self.payload = self.payload.push_test_data(test_data)
+
+    def save_payload_as_json(self, path):
+        """ Save payload into a json file """
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.payload.as_json(), f)

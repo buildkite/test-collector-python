@@ -58,15 +58,21 @@ See the [GitHub 'enhancement' issues](https://github.com/buildkite/test-collecto
 
 ## ⚒ Developing
 
-After cloning the repository, install the dependencies:
+After cloning the repository, setup virtual environment (please skip this step if you are using `direnv`):
 
+```bash
+python -m venv .venv && source .venv/bin/activate
 ```
+
+then install the dependencies:
+
+```bash
 pip install -e '.[dev]'
 ```
 
 And run the tests:
 
-```
+```bash
 pytest
 ```
 

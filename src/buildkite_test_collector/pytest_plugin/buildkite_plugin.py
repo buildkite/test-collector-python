@@ -19,11 +19,14 @@ class BuildkitePlugin:
             self.payload = self.payload.started()
 
         chunks = nodeid.split("::")
-        scope = "::".join(chunks[:-1])
-        name = chunks[-1]
-        location = f"{location[0]}:{location[1]}"
 
-        test_data = TestData.start(uuid4(), scope, name, location)
+        test_data = TestData.start(
+            uuid4(),
+            scope="::".join(chunks[:-1]),
+            name=chunks[-1],
+            file_name=location[0],
+            location=f"{location[0]}:{location[1]}"
+        )
         self.in_flight[nodeid] = test_data
 
     def pytest_runtest_logreport(self, report):

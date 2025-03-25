@@ -112,20 +112,24 @@ class TestData:
     name: str
     history: TestHistory
     location: Optional[str] = None
+    file_name: Optional[str] = None
     result: Union[TestResultPassed, TestResultFailed,
                   TestResultSkipped, None] = None
 
     @classmethod
     def start(cls, id: UUID,
+              *,
               scope: str,
               name: str,
-              location: Optional[str] = None) -> 'TestData':
+              location: Optional[str] = None,
+              file_name: Optional[str] = None) -> 'TestData':
         """Build a new instance with it's start_at time set to now"""
         return cls(
             id=id,
             scope=scope,
             name=name,
             location=location,
+            file_name=file_name,
             history=TestHistory(start_at=Instant.now())
         )
 
@@ -167,6 +171,7 @@ class TestData:
             "scope": self.scope,
             "name": self.name,
             "location": self.location,
+            "file_name": self.file_name,
             "history": self.history.as_json(started_at)
         }
 

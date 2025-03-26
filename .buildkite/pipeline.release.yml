@@ -1,6 +1,9 @@
 agents:
   queue: hosted
 
+env:
+  AWS_DEFAULT_REGION: us-east-1
+
 steps:
   - command: ".buildkite/steps/release-pypi"
     label: ":pypi:"
@@ -23,10 +26,8 @@ steps:
       - ecr#v2.9.0:
           login: true
           account_ids: "public.ecr.aws"
-          region: "us-east-1"
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/python:3.13.2-bookworm"
           environment:
             - TWINE_USERNAME
             - TWINE_PASSWORD
-

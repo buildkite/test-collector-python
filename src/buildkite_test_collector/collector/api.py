@@ -5,7 +5,7 @@ from os import environ
 from sys import stderr
 import traceback
 from requests import post, Response
-from requests.exceptions import InvalidHeader
+from requests.exceptions import InvalidHeader, HTTPError
 from .payload import Payload
 
 
@@ -29,13 +29,15 @@ def submit(payload: Payload, batch_size=100) -> Optional[Response]:
                                     "Authorization": f"Token token=\"{token}\""
                                 },
                                 timeout=60)
-                if response.status_code >= 300:
-                    return response
+                response.raise_for_status()
+                return response
         except InvalidHeader as error:
             print("Warning: Invalid `BUILDKITE_ANALYTICS_TOKEN` environment variable", file=stderr)
             print(error, file=stderr)
+        except HTTPError as err:
+            print("Warning: Failed to uploads test results to buildkite", file=stderr)
+            print(err, file=stderr)
         except Exception: # pylint: disable=broad-except
             error_message = traceback.format_exc()
             print(error_message, file=stderr)
-
-    return response
+    return None

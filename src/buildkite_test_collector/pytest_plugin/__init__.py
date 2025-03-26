@@ -28,10 +28,13 @@ def pytest_configure(config):
     env = detect_env()
     debug = environ.get("BUILDKITE_ANALYTICS_DEBUG_ENABLED")
 
+    config.addinivalue_line("markers", "execution_tag(key, val): add tag to test execution for Buildkite Test Collector")
+
     if env:
         plugin = BuildkitePlugin(Payload.init(env))
         setattr(config, '_buildkite', plugin)
         config.pluginmanager.register(plugin)
+
     elif debug:
         warning("Unable to detect CI environment.  No test analytics will be sent.")
 

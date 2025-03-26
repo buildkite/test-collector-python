@@ -1,6 +1,6 @@
 """Buildkite Test Analytics payload"""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, replace, field
 from typing import Dict, Tuple, Optional, Union, Literal
 from datetime import timedelta
 from uuid import UUID
@@ -107,12 +107,15 @@ class TestHistory:
 @dataclass(frozen=True)
 class TestData:
     """An individual test execution"""
+    # 8 attributes for this class seems reasonable
+    # pylint: disable=too-many-instance-attributes
     id: UUID
     scope: str
     name: str
     history: TestHistory
     location: Optional[str] = None
     file_name: Optional[str] = None
+    tags: dict = field(default_factory=dict)
     result: Union[TestResultPassed, TestResultFailed,
                   TestResultSkipped, None] = None
 
@@ -132,6 +135,10 @@ class TestData:
             file_name=file_name,
             history=TestHistory(start_at=Instant.now())
         )
+
+    def tag_execution(self, key, val) -> 'TestData':
+        """Set tag to test execution"""
+        self.tags[key] = val
 
     def finish(self) -> 'TestData':
         """Set the end_at and duration on this test"""
@@ -174,6 +181,9 @@ class TestData:
             "file_name": self.file_name,
             "history": self.history.as_json(started_at)
         }
+
+        if len(self.tags) > 0:
+            attrs["tags"] = self.tags
 
         if isinstance(self.result, TestResultPassed):
             attrs["result"] = "passed"

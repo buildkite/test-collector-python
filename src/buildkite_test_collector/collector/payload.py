@@ -115,7 +115,7 @@ class TestData:
     history: TestHistory
     location: Optional[str] = None
     file_name: Optional[str] = None
-    tags: dict = field(default_factory=dict)
+    tags: Dict[str,str] = field(default_factory=dict)
     result: Union[TestResultPassed, TestResultFailed,
                   TestResultSkipped, None] = None
 
@@ -136,8 +136,11 @@ class TestData:
             history=TestHistory(start_at=Instant.now())
         )
 
-    def tag_execution(self, key, val) -> 'TestData':
+    def tag_execution(self, key: str, val: str) -> 'TestData':
         """Set tag to test execution"""
+        if not isinstance(key, str) or not isinstance(val, str):
+            raise TypeError("Expected string for key and value")
+
         self.tags[key] = val
 
     def finish(self) -> 'TestData':

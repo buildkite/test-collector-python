@@ -28,7 +28,7 @@ def pytest_configure(config):
     env = detect_env()
     debug = environ.get("BUILDKITE_ANALYTICS_DEBUG_ENABLED")
 
-    config.addinivalue_line("markers", "execution_tag(key, val): add tag to test execution for Buildkite Test Collector")
+    config.addinivalue_line("markers", "execution_tag(key, value): add tag to test execution for Buildkite Test Collector. Both key and value must be a string.")
 
     if env:
         plugin = BuildkitePlugin(Payload.init(env))

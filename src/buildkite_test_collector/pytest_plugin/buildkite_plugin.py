@@ -29,9 +29,18 @@ class BuildkitePlugin:
         )
         self.in_flight[nodeid] = test_data
 
+    def pytest_runtest_teardown(self, item):
+        """pytest_runtest_hook hook callback to collect execution_tag"""
+        test_data = self.in_flight.get(item.nodeid)
+
+        if test_data:
+            tags = item.iter_markers("execution_tag")
+            for tag in tags:
+                test_data.tag_execution(tag.args[0], tag.args[1])
+
     def pytest_runtest_logreport(self, report):
         """pytest_runtest_logreport hook callback"""
-        if report.when != 'call':
+        if report.when != 'teardown':
             return
 
         nodeid = report.nodeid

@@ -168,3 +168,22 @@ def test_test_data_as_json_when_skipped(skipped_test):
     json = skipped_test.as_json(Instant.now())
 
     assert json["result"] == "skipped"
+
+class TestTestDataTagExecution:
+    def test_test_data_tag_execution(self, successful_test):
+        successful_test.tag_execution("owner", "test-engine")
+        successful_test.tag_execution("python.version", "3.12.3")
+
+        expected_tags = {"owner": "test-engine", "python.version": "3.12.3"}
+
+        assert successful_test.tags == expected_tags
+
+        json = successful_test.as_json(Instant.now())
+        assert json["tags"] == {"owner": "test-engine", "python.version": "3.12.3"}
+
+    def test_test_data_tag_execution_non_string(self, successful_test):
+        with pytest.raises(TypeError):
+            successful_test.tag_execution("feature", True)
+
+        with pytest.raises(TypeError):
+            successful_test.tag_execution(777, "lucky")

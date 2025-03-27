@@ -7,11 +7,6 @@ from buildkite_test_collector.collector.constants import COLLECTOR_NAME, VERSION
 from buildkite_test_collector.collector.run_env import detect_env
 
 
-def test_detect_env_with_no_env_returns_none():
-    with mock.patch.dict(os.environ, {}, clear=True):
-        assert detect_env() is None
-
-
 def test_detect_env_with_buildkite_api_env_vars_returns_the_correct_environment():
     id = str(uuid4())
     commit = uuid4().hex
@@ -96,9 +91,7 @@ def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
         assert runtime_env.message == "excellent adventure"
 
 def test_detect_env_with_generic_env_vars():
-    env = {
-        "CI": "true"
-    }
+    env = {}
 
     with mock.patch.dict(os.environ, env, clear=True):
         runtime_env = detect_env()

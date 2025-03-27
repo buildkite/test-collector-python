@@ -78,9 +78,6 @@ def __circle_ci_env() -> Optional['RuntimeEnvironment']:
 
 
 def __generic_env() -> Optional['RuntimeEnvironment']:
-    if __get_env("CI") is None:
-        return None
-
     return RuntimeEnvironment(
         ci="generic",
         key=str(uuid4()),

@@ -93,6 +93,23 @@ def test_submit_with_payload_returns_an_api_response(successful_test):
         assert len(json["errors"]) == 0
         assert json['queued'] == 1
 
+@responses.activate
+def test_submit_with_bad_response(successful_test):
+    responses.add(
+        responses.POST,
+        "https://analytics-api.buildkite.com/v1/uploads",
+        json={'error': str(uuid4())},
+        status=401)
+
+    with mock.patch.dict(os.environ, {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}):
+        payload = Payload.init(detect_env())
+        payload = Payload.started(payload)
+
+        payload = payload.push_test_data(successful_test)
+
+        result = submit(payload)
+
+        assert result is None
 
 @responses.activate
 def test_submit_with_large_payload_batches_requests(successful_test, failed_test):

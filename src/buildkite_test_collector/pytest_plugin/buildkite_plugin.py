@@ -1,6 +1,5 @@
 """Buildkite test collector plugin for Pytest"""
 import json
-
 from uuid import uuid4
 
 from ..collector.payload import TestData
@@ -29,26 +28,21 @@ class BuildkitePlugin:
         )
         self.in_flight[nodeid] = test_data
 
-    def pytest_runtest_teardown(self, item):
-        """pytest_runtest_hook hook callback to collect execution_tag"""
-        test_data = self.in_flight.get(item.nodeid)
-
-        if test_data:
-            tags = item.iter_markers("execution_tag")
-            for tag in tags:
-                test_data.tag_execution(tag.args[0], tag.args[1])
-
     def pytest_runtest_logreport(self, report):
-        """pytest_runtest_logreport hook callback"""
-        if report.when != 'teardown':
+        """pytest_runtest_logreport hook callback to get test outcome after test call"""
+
+        # This hook is called three times during the lifecycle of a test:
+        # after the setup phase, the call phase, and the teardown phase.
+        # Since we want to capture the outcome from the call phase,
+        # we only proceed when this hook is triggered following the call phase.
+        # See: https://github.com/buildkite/test-collector-python/pull/45
+        if report.when != 'call':
             return
 
         nodeid = report.nodeid
         test_data = self.in_flight.get(nodeid)
 
         if test_data:
-            test_data = test_data.finish()
-
             if report.passed:
                 test_data = test_data.passed()
 
@@ -58,7 +52,23 @@ class BuildkitePlugin:
             if report.skipped:
                 test_data = test_data.skipped()
 
-            del self.in_flight[nodeid]
+            # TestData is immutable.
+            # We need to replace the test_data in `in_flight` with updated test_data,
+            # so we can get the correct result when we process it during the teardown hook.
+            self.in_flight[nodeid] = test_data
+
+    def pytest_runtest_teardown(self, item):
+        """pytest_runtest_hook hook callback to mark test as finished and add it to the payload"""
+        test_data = self.in_flight.get(item.nodeid)
+
+        if test_data:
+            test_data = test_data.finish()
+
+            tags = item.iter_markers("execution_tag")
+            for tag in tags:
+                test_data = test_data.tag_execution(tag.args[0], tag.args[1])
+
+            del self.in_flight[item.nodeid]
             self.payload = self.payload.push_test_data(test_data)
 
     def save_payload_as_json(self, path):

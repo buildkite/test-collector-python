@@ -141,7 +141,9 @@ class TestData:
         if not isinstance(key, str) or not isinstance(val, str):
             raise TypeError("Expected string for key and value")
 
-        self.tags[key] = val
+        new_tags = self.tags.copy()
+        new_tags[key] = val
+        return replace(self, tags=new_tags)
 
     def finish(self) -> 'TestData':
         """Set the end_at and duration on this test"""

@@ -3,4 +3,4 @@
 """This module defines collector-level constants."""
 
 COLLECTOR_NAME='buildkite-test-collector'
-VERSION='0.2.0'
+VERSION='1.0.0rc1'

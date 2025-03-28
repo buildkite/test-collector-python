@@ -26,17 +26,12 @@ def spans(request):
 def pytest_configure(config):
     """pytest_configure hook callback"""
     env = detect_env()
-    debug = environ.get("BUILDKITE_ANALYTICS_DEBUG_ENABLED")
 
     config.addinivalue_line("markers", "execution_tag(key, value): add tag to test execution for Buildkite Test Collector. Both key and value must be a string.")
 
-    if env:
-        plugin = BuildkitePlugin(Payload.init(env))
-        setattr(config, '_buildkite', plugin)
-        config.pluginmanager.register(plugin)
-
-    elif debug:
-        warning("Unable to detect CI environment.  No test analytics will be sent.")
+    plugin = BuildkitePlugin(Payload.init(env))
+    setattr(config, '_buildkite', plugin)
+    config.pluginmanager.register(plugin)
 
 
 @pytest.hookimpl

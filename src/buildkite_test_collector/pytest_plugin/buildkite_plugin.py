@@ -3,6 +3,7 @@ import json
 from uuid import uuid4
 
 from ..collector.payload import TestData
+from .logger import logger
 
 class BuildkitePlugin:
     """Buildkite test collector plugin for Pytest"""
@@ -14,6 +15,7 @@ class BuildkitePlugin:
 
     def pytest_runtest_logstart(self, nodeid, location):
         """pytest_runtest_logstart hook callback"""
+        logger.debug('Enter pytest_runtest_logstart for %s', nodeid)
         if not self.payload.is_started():
             self.payload = self.payload.started()
 
@@ -41,6 +43,7 @@ class BuildkitePlugin:
 
         nodeid = report.nodeid
         test_data = self.in_flight.get(nodeid)
+        logger.debug('Enter pytest_runtest_logreport for %s', nodeid)
 
         if test_data:
             if report.passed:
@@ -59,6 +62,7 @@ class BuildkitePlugin:
 
     def pytest_runtest_teardown(self, item):
         """pytest_runtest_hook hook callback to mark test as finished and add it to the payload"""
+        logger.debug('Enter pytest_runtest_teardown for %s', item.nodeid)
         test_data = self.in_flight.get(item.nodeid)
 
         if test_data:
@@ -68,8 +72,34 @@ class BuildkitePlugin:
             for tag in tags:
                 test_data = test_data.tag_execution(tag.args[0], tag.args[1])
 
-            del self.in_flight[item.nodeid]
+            self.in_flight[item.nodeid] = test_data
+
+            self.finalize_test(item.nodeid)
+        else:
+            logger.warning('Unexpected missing test_data during pytest_runtest_teardown')
+
+    # Strictly speaking, we do not need this hook.
+    # But in pytest it's hard to predict how plugins interfere each other.
+    # So let's be defensive here.
+    def pytest_runtest_logfinish(self, nodeid, location):  # pylint: disable=unused-argument
+        """pytest_runtest_logfinish hook always runs in the very end"""
+        logger.debug('Enter pytest_runtest_logfinish for %s', nodeid)
+        if self.finalize_test(nodeid):
+            logger.warning(
+                'Detected possible interference in pytest_runtest_teardown hook. '
+                'Falling back to pytest_runtest_logfinish, but note that test tags '
+                'will not be uploaded.'
+            )
+
+
+    def finalize_test(self, nodeid):
+        """ Attempting to move test data for a nodeid to payload area for upload """
+        test_data = self.in_flight.get(nodeid)
+        if test_data:
+            del self.in_flight[nodeid]
             self.payload = self.payload.push_test_data(test_data)
+            return True
+        return False
 
     def save_payload_as_json(self, path):
         """ Save payload into a json file """

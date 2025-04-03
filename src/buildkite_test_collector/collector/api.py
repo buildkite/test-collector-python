@@ -2,22 +2,21 @@
 
 from typing import Optional
 from os import environ
-from sys import stderr
 import traceback
 from requests import post, Response
 from requests.exceptions import InvalidHeader, HTTPError
 from .payload import Payload
+from ..pytest_plugin.logger import logger
 
 
 def submit(payload: Payload, batch_size=100) -> Optional[Response]:
     """Submit a payload to the API"""
     token = environ.get("BUILDKITE_ANALYTICS_TOKEN")
-    debug = environ.get("BUILDKITE_ANALYTICS_DEBUG_ENABLED")
     api_url = environ.get("BUILDKITE_ANALYTICS_API_URL", "https://analytics-api.buildkite.com/v1")
     response = None
 
-    if debug and not token:
-        print("Warning: No `BUILDKITE_ANALYTICS_TOKEN` environment variable present", file=stderr)
+    if not token:
+        logger.warning("No `BUILDKITE_ANALYTICS_TOKEN` environment variable present")
 
     if token:
         try:
@@ -32,12 +31,12 @@ def submit(payload: Payload, batch_size=100) -> Optional[Response]:
                 response.raise_for_status()
                 return response
         except InvalidHeader as error:
-            print("Warning: Invalid `BUILDKITE_ANALYTICS_TOKEN` environment variable", file=stderr)
-            print(error, file=stderr)
+            logger.warning("Invalid `BUILDKITE_ANALYTICS_TOKEN` environment variable")
+            logger.warning(error)
         except HTTPError as err:
-            print("Warning: Failed to uploads test results to buildkite", file=stderr)
-            print(err, file=stderr)
-        except Exception: # pylint: disable=broad-except
+            logger.warning("Failed to uploads test results to buildkite")
+            logger.warning(err)
+        except Exception:  # pylint: disable=broad-except
             error_message = traceback.format_exc()
-            print(error_message, file=stderr)
+            logger.warning(error_message)
     return None

@@ -1,9 +1,6 @@
 # pylint: disable=line-too-long
 """Buildkite test collector for Pytest."""
 
-from logging import warning
-from os import environ
-
 import pytest
 
 from ..collector.payload import Payload

@@ -37,15 +37,29 @@ def pytest_unconfigure(config):
     plugin = getattr(config, '_buildkite', None)
 
     if plugin:
-        # Only submit if this is not an xdist worker,
-        # this prevents duplicate payload submissions
-        # see https://github.com/pytest-dev/pytest-xdist/blob/fabdbe3fd2dbaf0e2764697ba4c79938d565dc44/src/xdist/plugin.py#L305
-        if not hasattr(config, "workerinput"):
+        xdist_enabled = (
+            config.pluginmanager.getplugin("xdist") is not None
+            and config.getoption("numprocesses") is not None
+        )
+        is_xdist_worker = hasattr(config, 'workerinput')
+
+        is_controller = not xdist_enabled or (xdist_enabled and not is_xdist_worker)
+
+        # When xdist is not installed, or when it's installed and not enabled
+        if not xdist_enabled:
             submit(plugin.payload)
 
-        jsonpath = config.option.jsonpath
-        if jsonpath:
-            plugin.save_payload_as_json(jsonpath)
+        # When xdist is activated, we want to submit from worker thread only, because they have access to tag data
+        if xdist_enabled and is_xdist_worker:
+            submit(plugin.payload)
+
+        # We only want a single thread to write to the json file.
+        # When xdist is enabled, that will be the controller thread.
+        if is_controller:
+            # Note that when xdist is used, this JSON output file will NOT contain tags.
+            jsonpath = config.option.jsonpath
+            if jsonpath:
+                plugin.save_payload_as_json(jsonpath)
 
         del config._buildkite
         config.pluginmanager.unregister(plugin)

@@ -5,6 +5,8 @@ from typing import Dict, Tuple, Optional, Union, Literal
 from datetime import timedelta
 from uuid import UUID
 
+from ..pytest_plugin.logger import logger
+
 from .instant import Instant
 from .run_env import RuntimeEnvironment
 
@@ -215,6 +217,7 @@ class Payload:
     @classmethod
     def init(cls, run_env: RuntimeEnvironment) -> 'Payload':
         """Create a new instance of payload with the provided runtime environment"""
+
         return cls(
             run_env=run_env,
             data=(),
@@ -224,10 +227,13 @@ class Payload:
 
     def as_json(self) -> JsonDict:
         """Convert into a Dict suitable for eventual serialisation to JSON"""
-        finished_data = filter(
+        finished_data = list(filter(
             lambda td: td.is_finished(),
             self.data
-        )
+        ))
+
+        if len(finished_data) < len(self.data):
+            logger.warning('Unexpected unfinished test data, skipping unfinished test records...')
 
         return {
             "format": "json",

@@ -77,7 +77,7 @@ def __circle_ci_env() -> Optional['RuntimeEnvironment']:
     )
 
 
-def __generic_env() -> Optional['RuntimeEnvironment']:
+def __generic_env() -> 'RuntimeEnvironment':
     return RuntimeEnvironment(
         ci="generic",
         key=str(uuid4()),
@@ -120,7 +120,7 @@ class RuntimeEnvironment:
         return {k: v for k, v in attrs.items() if v is not None}
 
 
-def detect_env() -> Optional['RuntimeEnvironment']:
+def detect_env() -> RuntimeEnvironment:
     """Attempt to detect the CI system we're running in"""
     return __buildkite_env() or \
         __github_actions_env() or \

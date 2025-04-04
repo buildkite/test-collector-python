@@ -60,14 +60,19 @@ class BuildkitePlugin:
             # so we can get the correct result when we process it during the teardown hook.
             self.in_flight[nodeid] = test_data
 
-    def pytest_runtest_teardown(self, item):
+    # This hook only runs in xdist worker thread, not controller thread.
+    # We used to rely on pytest_runtest_teardown, but somehow xdist will ignore it
+    # in both controller and worker thread.
+    def pytest_runtest_makereport(self, item, call):
         """pytest_runtest_hook hook callback to mark test as finished and add it to the payload"""
-        logger.debug('Enter pytest_runtest_teardown for %s', item.nodeid)
+
+        if call.when != 'teardown':
+            return
+
+        logger.debug('Enter pytest_runtest_makereport for %s', item.nodeid)
         test_data = self.in_flight.get(item.nodeid)
 
         if test_data:
-            test_data = test_data.finish()
-
             tags = item.iter_markers("execution_tag")
             for tag in tags:
                 test_data = test_data.tag_execution(tag.args[0], tag.args[1])
@@ -76,27 +81,29 @@ class BuildkitePlugin:
 
             self.finalize_test(item.nodeid)
         else:
-            logger.warning('Unexpected missing test_data during pytest_runtest_teardown')
+            logger.warning('Unexpected missing test_data during pytest_runtest_makereport')
 
-    # Strictly speaking, we do not need this hook.
-    # But in pytest it's hard to predict how plugins interfere each other.
-    # So let's be defensive here.
+    # If pytest_runtest_makereport runs properly then this hook is unnecessary.
+    # But as we commented above, in some cases, in pytest-xdist controller thread,
+    # pytest_runtest_makereport will be skipped.
+    # In that case, it's necessary for this hook to work as a fallback mechanism.
     def pytest_runtest_logfinish(self, nodeid, location):  # pylint: disable=unused-argument
         """pytest_runtest_logfinish hook always runs in the very end"""
         logger.debug('Enter pytest_runtest_logfinish for %s', nodeid)
         if self.finalize_test(nodeid):
-            logger.warning(
-                'Detected possible interference in pytest_runtest_teardown hook. '
-                'Falling back to pytest_runtest_logfinish, but note that test tags '
-                'will not be uploaded.'
+            # This is expected to happen in xdist controller thread.
+            # Where it would skip many pytest_runtest_xxx hooks
+            logger.debug(
+                'Detected possible interference in pytest_runtest_makereport hook (xdist?). '
+                'Falling back to pytest_runtest_logfinish'
             )
-
 
     def finalize_test(self, nodeid):
         """ Attempting to move test data for a nodeid to payload area for upload """
         test_data = self.in_flight.get(nodeid)
         if test_data:
             del self.in_flight[nodeid]
+            test_data = test_data.finish()
             self.payload = self.payload.push_test_data(test_data)
             return True
         return False

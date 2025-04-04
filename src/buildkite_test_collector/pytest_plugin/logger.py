@@ -1,13 +1,10 @@
-"""A plugin internal logger, use DEBUG=1 env var to turn on all debug logs"""
+"""A plugin internal logger"""
 import os
 import logging
 
 def setup_logger(name=__name__):
     """
     Configure and return a logger with the specified name.
-
-    The logger's level is set based on the DEBUG environment variable.
-    If DEBUG=1, the level is set to DEBUG, otherwise it's set to INFO.
 
     Args:
         name (str): The name for the logger. Defaults to the current module name.
@@ -18,7 +15,8 @@ def setup_logger(name=__name__):
     l = logging.getLogger(name)
 
     # Set level based on DEBUG env var
-    l.setLevel(logging.DEBUG if os.getenv("DEBUG") == "1" else logging.INFO)
+    debug_enabled = os.getenv("BUILDKITE_ANALYTICS_DEBUG_ENABLED") == "1"
+    l.setLevel(logging.DEBUG if debug_enabled else logging.INFO)
 
     # Add handler only if none exists (prevents duplicate logs)
     if not l.handlers:

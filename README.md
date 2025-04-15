@@ -1,4 +1,4 @@
-# Buildkite Test Collector for Python (Beta)
+# Buildkite Test Collector for Python
 
 The official Python adapter for [Buildkite Test Analytics](https://buildkite.com/test-analytics) which collects information about your tests.
 

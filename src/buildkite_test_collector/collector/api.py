@@ -20,8 +20,8 @@ def submit(payload: Payload, batch_size=100) -> Generator[Optional[Response], An
         yield None
 
     else:
-        try:
-            for payload_slice in payload.into_batches(batch_size):
+        for payload_slice in payload.into_batches(batch_size):
+            try:
                 response = post(api_url + "/uploads",
                                 json=payload_slice.as_json(),
                                 headers={
@@ -31,15 +31,15 @@ def submit(payload: Payload, batch_size=100) -> Generator[Optional[Response], An
                                 timeout=60)
                 response.raise_for_status()
                 yield response
-        except InvalidHeader as error:
-            logger.warning("Invalid `BUILDKITE_ANALYTICS_TOKEN` environment variable")
-            logger.warning(error)
-            yield None
-        except HTTPError as err:
-            logger.warning("Failed to uploads test results to buildkite")
-            logger.warning(err)
-            yield None
-        except Exception:  # pylint: disable=broad-except
-            error_message = traceback.format_exc()
-            logger.warning(error_message)
-            yield None
+            except InvalidHeader as error:
+                logger.warning("Invalid `BUILDKITE_ANALYTICS_TOKEN` environment variable")
+                logger.warning(error)
+                yield None
+            except HTTPError as err:
+                logger.warning("Failed to uploads test results to buildkite")
+                logger.warning(err)
+                yield None
+            except Exception:  # pylint: disable=broad-except
+                error_message = traceback.format_exc()
+                logger.warning(error_message)
+                yield None

@@ -145,6 +145,7 @@ def test_submit_with_large_payload_batches_requests(successful_test, failed_test
         assert len(results) == 2
 
         for result in results:
+            assert result
             assert result.status_code >= 200
             assert result.status_code < 300
 

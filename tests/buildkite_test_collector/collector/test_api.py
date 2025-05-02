@@ -141,14 +141,16 @@ def test_submit_with_large_payload_batches_requests(successful_test, failed_test
         payload = payload.push_test_data(successful_test)
         payload = payload.push_test_data(failed_test)
 
-        result = submit(payload, batch_size=1)
+        results = [response for response in submit(payload, batch_size=1)]
+        assert len(results) == 2
 
-        assert result.status_code >= 200
-        assert result.status_code < 300
+        for result in results:
+            assert result.status_code >= 200
+            assert result.status_code < 300
 
-        json = result.json()
-        assert len(json["errors"]) == 0
-        assert json['queued'] == 1
+            json = result.json()
+            assert len(json["errors"]) == 0
+            assert json['queued'] == 1
 
 @responses.activate
 def test_api_url_override(successful_test):

@@ -39,7 +39,7 @@ def test_submit_with_payload_timeout_captures_ConnectTimeout_error(capfd, succes
 
         payload = payload.push_test_data(successful_test)
 
-        result = submit(payload)
+        result = next(submit(payload))
         captured = capfd.readouterr()
 
         assert captured.err.startswith("buildkite-test-collector - WARNING -")
@@ -59,7 +59,7 @@ def test_submit_with_payload_timeout_captures_ReadTimeout_error(capfd, successfu
 
         payload = payload.push_test_data(successful_test)
 
-        result = submit(payload)
+        result = next(submit(payload))
         captured = capfd.readouterr()
 
         assert captured.err.startswith("buildkite-test-collector - WARNING -")

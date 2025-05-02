@@ -16,14 +16,14 @@ def test_submit_with_missing_api_key_environment_variable_returns_none():
     with mock.patch.dict(os.environ, {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": ""}):
         payload = Payload.init(detect_env())
 
-        assert submit(payload) is None
+        assert next(submit(payload)) is None
 
 
 def test_submit_with_invalid_api_key_environment_variable_returns_none():
     with mock.patch.dict(os.environ, {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": "\n"}):
         payload = Payload.init(detect_env())
 
-        assert submit(payload) is None
+        assert next(submit(payload)) is None
 
 @responses.activate
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
@@ -84,7 +84,8 @@ def test_submit_with_payload_returns_an_api_response(successful_test):
 
         payload = payload.push_test_data(successful_test)
 
-        result = submit(payload)
+        result = next(submit(payload))
+        assert result
 
         assert result.status_code >= 200
         assert result.status_code < 300
@@ -107,7 +108,7 @@ def test_submit_with_bad_response(successful_test):
 
         payload = payload.push_test_data(successful_test)
 
-        result = submit(payload)
+        result = next(submit(payload))
 
         assert result is None
 
@@ -175,7 +176,8 @@ def test_api_url_override(successful_test):
 
         payload = payload.push_test_data(successful_test)
 
-        result = submit(payload)
+        result = next(submit(payload))
+        assert result
 
         assert result.status_code >= 200
         assert result.status_code < 300

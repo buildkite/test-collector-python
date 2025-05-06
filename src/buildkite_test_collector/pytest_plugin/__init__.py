@@ -47,11 +47,11 @@ def pytest_unconfigure(config):
 
         # When xdist is not installed, or when it's installed and not enabled
         if not xdist_enabled:
-            submit(plugin.payload)
+            list(submit(plugin.payload))
 
         # When xdist is activated, we want to submit from worker thread only, because they have access to tag data
         if xdist_enabled and is_xdist_worker:
-            submit(plugin.payload)
+            list(submit(plugin.payload))
 
         # We only want a single thread to write to the json file.
         # When xdist is enabled, that will be the controller thread.

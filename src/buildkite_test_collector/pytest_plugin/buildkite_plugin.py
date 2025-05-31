@@ -1,6 +1,9 @@
 """Buildkite test collector plugin for Pytest"""
 import json
+import os
 from uuid import uuid4
+
+from filelock import Timeout, FileLock
 
 from ..collector.payload import TestData
 from .logger import logger
@@ -108,7 +111,22 @@ class BuildkitePlugin:
             return True
         return False
 
-    def save_payload_as_json(self, path):
-        """ Save payload into a json file """
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.payload.as_json()["data"], f)
+    def save_payload_as_json(self, path, merge=False):
+        """Save payload into a json file, merging with existing data if merge is True"""
+        lock = FileLock(f"{path}.lock")
+        with lock:
+            data = list(self.payload.as_json()["data"])
+            if merge and os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        existing_data = json.load(f)
+                except json.JSONDecodeError:
+                    existing_data = []
+                # Merge existing data with current payload
+                merged_data = existing_data + data
+            else:
+                # If file does not exist or merge is False, use current payload
+                merged_data = data
+
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(merged_data, f)

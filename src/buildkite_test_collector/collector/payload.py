@@ -77,7 +77,7 @@ class TestHistory:
     start_at: Optional[Instant] = None
     end_at: Optional[Instant] = None
     duration: Optional[timedelta] = None
-    children: Tuple['TestSpan'] = ()
+    children: list['TestSpan'] = ()
 
     def is_finished(self) -> bool:
         """Is there an end_at time present?"""
@@ -91,7 +91,7 @@ class TestHistory:
         """Convert this trace into a Dict for eventual serialisation into JSON"""
         attrs = {
             "section": "top",
-            "children": tuple(map(lambda span: span.as_json(started_at), self.children))
+            "children": list(map(lambda span: span.as_json(started_at), self.children))
         }
 
         if self.start_at is not None:

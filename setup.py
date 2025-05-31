@@ -21,7 +21,7 @@ setup(name=constants.COLLECTOR_NAME,
       zip_safe=False,
       package_dir={'': 'src'},
       packages=find_packages(where='src'),
-      install_requires=["requests>=2", "pytest>=7"],
+      install_requires=["requests>=2", "pytest>=7", "filelock>=3"],
       extras_require={
           "dev": [
               "mock>=4",

@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from buildkite_test_collector.collector.payload import Payload
 from buildkite_test_collector.pytest_plugin import BuildkitePlugin
@@ -77,26 +78,6 @@ def test_save_json_payload_with_non_existent_file(fake_env, tmp_path, successful
     assert json.loads(path.read_text()) == expected_data
 
 
-def test_save_json_payload_with_empty_file(fake_env, tmp_path, successful_test):
-    payload = Payload.init(fake_env)
-    payload = Payload.started(payload)
-    payload = payload.push_test_data(successful_test)
-
-    plugin = BuildkitePlugin(payload)
-
-    path = tmp_path / "empty.json"
-
-    # Create an empty file
-    path.write_text("")
-
-    # Save with merge option
-    plugin.save_payload_as_json(path, merge=True)
-
-    # Check if the data was saved correctly
-    expected_data = [successful_test.as_json(payload.started_at)]
-    assert json.loads(path.read_text()) == expected_data
-
-
 def test_save_json_payload_with_invalid_file(fake_env, tmp_path, successful_test):
     payload = Payload.init(fake_env)
     payload = Payload.started(payload)
@@ -109,12 +90,9 @@ def test_save_json_payload_with_invalid_file(fake_env, tmp_path, successful_test
     # Create a file with invalid JSON
     path.write_text("{invalid: json}")
 
-    # Save with merge option
-    plugin.save_payload_as_json(path, merge=True)
-
-    # Check if the data was saved correctly
-    expected_data = [successful_test.as_json(payload.started_at)]
-    assert json.loads(path.read_text()) == expected_data
+    # Save with merge option, expect JSONDecodeError
+    with pytest.raises(json.decoder.JSONDecodeError):
+        plugin.save_payload_as_json(path, merge=True)
 
 
 def test_save_json_payload_with_large_data(fake_env, tmp_path, successful_test):

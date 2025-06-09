@@ -3,7 +3,7 @@ import json
 import os
 from uuid import uuid4
 
-from filelock import Timeout, FileLock
+from filelock import FileLock
 
 from ..collector.payload import TestData
 from .logger import logger
@@ -113,20 +113,16 @@ class BuildkitePlugin:
 
     def save_payload_as_json(self, path, merge=False):
         """Save payload into a json file, merging with existing data if merge is True"""
-        lock = FileLock(f"{path}.lock")
-        with lock:
-            data = list(self.payload.as_json()["data"])
-            if merge and os.path.exists(path):
-                try:
+        data = list(self.payload.as_json()["data"])
+
+        if merge:
+            lock = FileLock(f"{path}.lock")
+            with lock:
+                if os.path.exists(path):
                     with open(path, "r", encoding="utf-8") as f:
                         existing_data = json.load(f)
-                except json.JSONDecodeError:
-                    existing_data = []
-                # Merge existing data with current payload
-                merged_data = existing_data + data
-            else:
-                # If file does not exist or merge is False, use current payload
-                merged_data = data
+                    # Merge existing data with current payload
+                    data = existing_data + data
 
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(merged_data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)

@@ -1,7 +1,7 @@
 """Buildkite Test Analytics payload"""
 
 from dataclasses import dataclass, replace, field
-from typing import Dict, Tuple, Optional, Union, Literal
+from typing import Dict, Tuple, Optional, Union, Literal, List
 from datetime import timedelta
 from uuid import UUID
 
@@ -77,7 +77,7 @@ class TestHistory:
     start_at: Optional[Instant] = None
     end_at: Optional[Instant] = None
     duration: Optional[timedelta] = None
-    children: Tuple['TestSpan'] = ()
+    children: List['TestSpan'] = ()
 
     def is_finished(self) -> bool:
         """Is there an end_at time present?"""
@@ -91,7 +91,7 @@ class TestHistory:
         """Convert this trace into a Dict for eventual serialisation into JSON"""
         attrs = {
             "section": "top",
-            "children": tuple(map(lambda span: span.as_json(started_at), self.children))
+            "children": list(map(lambda span: span.as_json(started_at), self.children))
         }
 
         if self.start_at is not None:

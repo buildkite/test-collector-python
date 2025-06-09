@@ -59,7 +59,7 @@ def pytest_unconfigure(config):
             # Note that when xdist is used, this JSON output file will NOT contain tags.
             jsonpath = config.option.jsonpath
             if jsonpath:
-                plugin.save_payload_as_json(jsonpath)
+                plugin.save_payload_as_json(jsonpath, merge=config.option.mergejson)
 
         del config._buildkite
         config.pluginmanager.unregister(plugin)
@@ -74,4 +74,11 @@ def pytest_addoption(parser):
         dest="jsonpath",
         metavar="path",
         help='save json file at given path'
+    )
+    group.addoption(
+        '--merge-json',
+        default=False,
+        action='store_true',
+        dest="mergejson",
+        help='merge json output with existing file, if it exists'
     )

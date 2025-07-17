@@ -26,7 +26,10 @@ def successful_test(history_finished) -> TestData:
 
 @pytest.fixture
 def failed_test(successful_test) -> TestData:
-    return replace(successful_test, result=TestResultFailed("bogus"))
+    return replace(
+        successful_test,
+        result=TestResultFailed("bogus", [{"expanded": ["test failed"], "backtrace": ["test.py:1"]}])
+    )
 
 
 @pytest.fixture

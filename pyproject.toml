@@ -9,27 +9,12 @@ description = "Buildkite Test Analytics collector"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
-authors = [
-    { name = "James Harton", email = "james.harton@alembic.com.au" }
-]
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Framework :: Pytest",
-]
-dependencies = [
-    "requests>=2",
-    "pytest>=7",
-    "filelock>=3",
-]
+authors = [{ name = "James Harton", email = "james.harton@alembic.com.au" }]
+classifiers = ["License :: OSI Approved :: MIT License", "Framework :: Pytest"]
+dependencies = ["requests>=2", "pytest>=7", "filelock>=3"]
 
 [project.optional-dependencies]
-dev = [
-    "mock>=4",
-    "check-manifest",
-    "twine",
-    "responses",
-    "pylint",
-]
+dev = ["mock>=4", "check-manifest", "twine", "responses", "pylint"]
 
 [project.urls]
 Homepage = "https://github.com/buildkite/test-collector-python"
@@ -41,9 +26,4 @@ buildkite-test-collector = "buildkite_test_collector.pytest_plugin"
 packages = ["src/buildkite_test_collector"]
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-    "/tests",
-    "/README.md",
-    "/LICENSE.txt",
-]
+include = ["/src", "/tests", "/README.md", "/LICENSE.txt"]

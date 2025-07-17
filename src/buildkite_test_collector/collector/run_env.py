@@ -1,4 +1,4 @@
-"""Runtime environment detection"""
+"""Test Engine run_env"""
 
 from dataclasses import dataclass
 from typing import Dict, Optional
@@ -17,13 +17,13 @@ def __get_env(name: str) -> Optional[str]:
     return var
 
 
-def __buildkite_env() -> Optional['RuntimeEnvironment']:
+def __buildkite_env() -> Optional['RunEnv']:
     build_id = __get_env("BUILDKITE_BUILD_ID")
 
     if build_id is None:
         return None
 
-    return RuntimeEnvironment(
+    return RunEnv(
         ci="buildkite",
         key=build_id,
         url=__get_env("BUILDKITE_BUILD_URL"),
@@ -35,7 +35,7 @@ def __buildkite_env() -> Optional['RuntimeEnvironment']:
     )
 
 
-def __github_actions_env() -> Optional['RuntimeEnvironment']:
+def __github_actions_env() -> Optional['RunEnv']:
     action = __get_env("GITHUB_ACTION")
     run_number = __get_env("GITHUB_RUN_NUMBER")
     run_attempt = __get_env("GITHUB_RUN_ATTEMPT")
@@ -46,7 +46,7 @@ def __github_actions_env() -> Optional['RuntimeEnvironment']:
     repo = __get_env("GITHUB_REPOSITORY")
     run_id = __get_env("GITHUB_RUN_ID")
 
-    return RuntimeEnvironment(
+    return RunEnv(
         ci="github_actions",
         key=f"{action}-{run_number}-{run_attempt}",
         url=f"https://github.com/{repo}/actions/runs/{run_id}",
@@ -58,14 +58,14 @@ def __github_actions_env() -> Optional['RuntimeEnvironment']:
     )
 
 
-def __circle_ci_env() -> Optional['RuntimeEnvironment']:
+def __circle_ci_env() -> Optional['RunEnv']:
     build_num = __get_env("CIRCLE_BUILD_NUM")
     workflow_id = __get_env("CIRCLE_WORKFLOW_ID")
 
     if (build_num is None or workflow_id is None):
         return None
 
-    return RuntimeEnvironment(
+    return RunEnv(
         ci="circleci",
         key=f"{workflow_id}-{build_num}",
         url=__get_env("CIRCLE_BUILD_URL"),
@@ -77,8 +77,8 @@ def __circle_ci_env() -> Optional['RuntimeEnvironment']:
     )
 
 
-def __generic_env() -> 'RuntimeEnvironment':
-    return RuntimeEnvironment(
+def __generic_env() -> 'RunEnv':
+    return RunEnv(
         ci="generic",
         key=str(uuid4()),
         url=None,
@@ -91,8 +91,8 @@ def __generic_env() -> 'RuntimeEnvironment':
 
 
 @dataclass(frozen=True)
-class RuntimeEnvironment:
-    """The detected RuntimeEnvironment"""
+class RunEnv:
+    """The detected RunEnv"""
     ci: str
     key: str
     number: Optional[str]
@@ -120,7 +120,7 @@ class RuntimeEnvironment:
         return {k: v for k, v in attrs.items() if v is not None}
 
 
-def detect_env() -> RuntimeEnvironment:
+def detect_env() -> RunEnv:
     """Attempt to detect the CI system we're running in"""
     return __buildkite_env() or \
         __github_actions_env() or \

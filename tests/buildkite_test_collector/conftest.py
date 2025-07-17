@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 
 from buildkite_test_collector.collector.payload import TestData, TestResultPassed, TestHistory, Payload, TestResultFailed, TestResultSkipped
-from buildkite_test_collector.collector.run_env import RuntimeEnvironment
+from buildkite_test_collector.collector.run_env import RunEnv
 from buildkite_test_collector.collector.instant import Instant
 
 
@@ -72,8 +72,8 @@ def history_finished() -> TestHistory:
 
 
 @pytest.fixture
-def fake_env() -> RuntimeEnvironment:
-    return RuntimeEnvironment(
+def fake_env() -> RunEnv:
+    return RunEnv(
         ci="example",
         key=str(uuid4()),
         number=str(randint(0, 1000)),

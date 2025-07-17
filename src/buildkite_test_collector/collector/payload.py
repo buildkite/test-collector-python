@@ -8,7 +8,7 @@ from uuid import UUID
 from ..pytest_plugin.logger import logger
 
 from .instant import Instant
-from .run_env import RuntimeEnvironment
+from .run_env import RunEnv
 
 JsonValue = Union[str, int, float, bool, 'JsonDict', Tuple['JsonValue']]
 JsonDict = Dict[str, JsonValue]
@@ -209,14 +209,14 @@ class TestData:
 @dataclass(frozen=True)
 class Payload:
     """The full test analytics payload"""
-    run_env: RuntimeEnvironment
+    run_env: RunEnv
     data: Tuple[TestData]
     started_at: Optional[Instant]
     finished_at: Optional[Instant]
 
     @classmethod
-    def init(cls, run_env: RuntimeEnvironment) -> 'Payload':
-        """Create a new instance of payload with the provided runtime environment"""
+    def init(cls, run_env: RunEnv) -> 'Payload':
+        """Create a new instance of payload with the provided RunEnv"""
 
         return cls(
             run_env=run_env,

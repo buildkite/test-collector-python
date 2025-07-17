@@ -5,11 +5,11 @@ build-backend = "hatchling.build"
 [project]
 name = "buildkite-test-collector"
 version = "1.0.4"
-description = "Buildkite Test Analytics collector"
+description = "Buildkite Test Engine collector"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
-authors = [{ name = "James Harton", email = "james.harton@alembic.com.au" }]
+authors = [{ name = "Buildkite", email = "support@buildkite.com" }]
 classifiers = ["License :: OSI Approved :: MIT License", "Framework :: Pytest"]
 dependencies = ["requests>=2", "pytest>=7", "filelock>=3"]
 

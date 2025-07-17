@@ -1,11 +1,11 @@
-# pylint: disable=line-too-long
 """Buildkite test collector for Pytest."""
 
+import os
 import pytest
 
 from ..collector.payload import Payload
-from ..collector.run_env import detect_env
-from ..collector.api import submit
+from ..collector.run_env import RunEnvBuilder
+from ..collector.api import API
 from .span_collector import SpanCollector
 from .buildkite_plugin import BuildkitePlugin
 
@@ -22,9 +22,12 @@ def spans(request):
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     """pytest_configure hook callback"""
-    env = detect_env()
+    env = RunEnvBuilder(os.environ).build()
 
-    config.addinivalue_line("markers", "execution_tag(key, value): add tag to test execution for Buildkite Test Collector. Both key and value must be a string.")
+    config.addinivalue_line("markers",
+        "execution_tag(key, value): "
+        "add tag to test execution for Buildkite Test Collector. "
+        "Both key and value must be a string.")
 
     plugin = BuildkitePlugin(Payload.init(env))
     setattr(config, '_buildkite', plugin)
@@ -37,6 +40,7 @@ def pytest_unconfigure(config):
     plugin = getattr(config, '_buildkite', None)
 
     if plugin:
+        api = API(os.environ)
         xdist_enabled = (
             config.pluginmanager.getplugin("xdist") is not None
             and config.getoption("numprocesses") is not None
@@ -47,11 +51,12 @@ def pytest_unconfigure(config):
 
         # When xdist is not installed, or when it's installed and not enabled
         if not xdist_enabled:
-            list(submit(plugin.payload))
+            list(api.submit(plugin.payload))
 
-        # When xdist is activated, we want to submit from worker thread only, because they have access to tag data
+        # When xdist is activated, we want to submit from worker thread only, because they have
+        # access to tag data
         if xdist_enabled and is_xdist_worker:
-            list(submit(plugin.payload))
+            list(api.submit(plugin.payload))
 
         # We only want a single thread to write to the json file.
         # When xdist is enabled, that will be the controller thread.

@@ -7,6 +7,7 @@ from filelock import FileLock
 
 from ..collector.payload import TestData
 from .logger import logger
+from .failure_reasons import failure_reasons
 
 class BuildkitePlugin:
     """Buildkite test collector plugin for Pytest"""
@@ -53,7 +54,11 @@ class BuildkitePlugin:
                 test_data = test_data.passed()
 
             if report.failed:
-                test_data = test_data.failed(report.longreprtext)
+                failure_reason, failure_expanded = failure_reasons(longrepr=report.longrepr)
+                test_data = test_data.failed(
+                    failure_reason=failure_reason,
+                    failure_expanded=failure_expanded
+                )
 
             if report.skipped:
                 test_data = test_data.skipped()
@@ -103,6 +108,7 @@ class BuildkitePlugin:
 
     def finalize_test(self, nodeid):
         """ Attempting to move test data for a nodeid to payload area for upload """
+        logger.debug('Entering finalize_test for %s', nodeid)
         test_data = self.in_flight.get(nodeid)
         if test_data:
             del self.in_flight[nodeid]

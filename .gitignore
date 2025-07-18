@@ -16,3 +16,6 @@ __pycache__
 .direnv/*
 
 build
+
+# uv
+.venv/

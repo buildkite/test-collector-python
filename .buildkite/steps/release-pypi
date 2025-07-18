@@ -9,13 +9,16 @@ __root="$(cd "$(dirname "${__dir}")"/../ && pwd)"
 
 cd "$__root"
 
-python -m venv .venv && source .venv/bin/activate
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
 
-pip install -e '.[dev]'
+# Install dependencies and build
+uv sync --all-extras
 
-# It will spit out a tar.gz in ./dist
-python -m build
+# Build the package
+uv build
 
-python -m twine check dist/*
-
-python -m twine upload --skip-existing dist/*
+# Check and upload to PyPI
+uv run twine check dist/*
+uv run twine upload --skip-existing dist/*

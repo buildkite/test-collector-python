@@ -13,26 +13,31 @@ The official Python adapter for [Buildkite Test Analytics](https://buildkite.com
 
 1. [Create a test suite](https://buildkite.com/docs/test-analytics), and copy the API token that it gives you.
 
-2. Add `buildkite-test-collector` to your list of dev dependencies in `setup.py`
+2. Add `buildkite-test-collector` to your project dependencies
 
-```python
-        extras_require={
-            "dev": [
-                "buildkite-test-collector"
-            ]
-        }
+Using uv:
+```sh
+uv add --dev buildkite-test-collector
+```
+
+Or add it to your `pyproject.toml`:
+```toml
+[project.optional-dependencies]
+dev = [
+    "buildkite-test-collector"
+]
 ```
 
 3. Set up your API token
 
-Add the `BUIDLKITE_ANALYTICS_TOKEN` environment variable to your build system's environment.
+Add the `BUILDKITE_ANALYTICS_TOKEN` environment variable to your build system's environment.
 
 4. Run your tests
 
-Run your tests like normal.  Note that we attempt to detect the presence of several common CI environments, however if this fails you can set the `CI` environment variable to any value and it will work.
+Run your tests like normal. Note that we attempt to detect the presence of several common CI environments, however if this fails you can set the `CI` environment variable to any value and it will work.
 
 ```sh
-$ pytest
+uv run pytest
 ```
 
 5. Verify that it works
@@ -58,22 +63,22 @@ See the [GitHub 'enhancement' issues](https://github.com/buildkite/test-collecto
 
 ## ⚒ Developing
 
-After cloning the repository, setup virtual environment (please skip this step if you are using `direnv`):
+After cloning the repository, install [uv](https://docs.astral.sh/uv/) if you haven't already:
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-then install the dependencies:
+Then install the dependencies:
 
 ```bash
-pip install -e '.[dev]'
+uv sync --all-extras
 ```
 
 And run the tests:
 
 ```bash
-pytest
+uv run pytest
 ```
 
 Useful resources for developing collectors include the [Buildkite Test Analytics docs](https://buildkite.com/docs/test-analytics) and the [RSpec and Minitest collectors](https://github.com/buildkite/rspec-buildkite-analytics).

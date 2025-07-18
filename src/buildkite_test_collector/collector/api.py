@@ -1,4 +1,4 @@
-"""Buildkite Test Analytics API"""
+"""Buildkite Test Engine API"""
 
 from typing import Any, Generator, Optional, Mapping
 import traceback
@@ -10,7 +10,7 @@ from ..pytest_plugin.logger import logger
 
 # pylint: disable=too-few-public-methods
 class API:
-    """Buildkite Test Analytics API client"""
+    """Buildkite Test Engine API client"""
 
     ENV_TOKEN = "BUILDKITE_ANALYTICS_TOKEN"
     ENV_API_URL = "BUILDKITE_ANALYTICS_API_URL"

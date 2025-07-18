@@ -1,6 +1,6 @@
 # Buildkite Test Collector for Python
 
-The official Python adapter for [Buildkite Test Analytics](https://buildkite.com/test-analytics) which collects information about your tests.
+The official Python adapter for [Buildkite Test Engine](https://buildkite.com/platform/test-engine/) which collects information about your tests.
 
 **Supported python versions:** >=3.8
 
@@ -11,7 +11,7 @@ The official Python adapter for [Buildkite Test Analytics](https://buildkite.com
 
 ## 👉 Installing
 
-1. [Create a test suite](https://buildkite.com/docs/test-analytics), and copy the API token that it gives you.
+1. [Create a test suite](https://buildkite.com/docs/test-engine), and copy the API token that it gives you.
 
 2. Add `buildkite-test-collector` to your project dependencies
 
@@ -42,20 +42,20 @@ uv run pytest
 
 5. Verify that it works
 
-If all is well, you should see the test run in the test analytics section of the Buildkite dashboard.
+If all is well, you should see the test run in the Test Engine section of the Buildkite dashboard.
 
 ## 🎢 Tracing
 
-The Buildkite Test Analytics REST API has support for tracing potentially slow operations within your tests, and can collect span data of [four types](https://buildkite.com/docs/test-analytics/importing-json#json-test-results-data-reference-span-objects): http, sql, sleep and annotations. This is documented as part of our public JSON API so anyone can instrument any code to send this data.
+Buildkite Test Engine has support for tracing potentially slow operations within your tests, and can collect span data of [four types](https://buildkite.com/docs/test-engine/importing-json#json-test-results-data-reference-span-objects): http, sql, sleep and annotations. This is documented as part of our public JSON API so anyone can instrument any code to send this data.
 
-This library supports the ability to transmit tracing information to your Test Analytics output by using the new `spans` pytest fixture.  See [the `SpanCollector` documentation](https://github.com/buildkite/test-collector-python/blob/main/src/buildkite_test_collector/pytest_plugin/span_collector.py) for more information.
+This library supports the ability to transmit tracing information to your Test Engine output by using the new `spans` pytest fixture.  See [the `SpanCollector` documentation](https://github.com/buildkite/test-collector-python/blob/main/src/buildkite_test_collector/pytest_plugin/span_collector.py) for more information.
 
 You may also need to manually capture the data you wish to trace for your use case. For examples of how we've done this in our Ruby test collector, see:
 - [Instrumenting Rails to capture sql data](https://github.com/buildkite/test-collector-ruby/blob/9ac2b465cad647790d89b501a1754b06e47d5997/lib/buildkite/test_collector.rb#L107)
 - [Monkey patching to various libraries to capture http requests](https://github.com/buildkite/test-collector-ruby/blob/9ac2b465cad647790d89b501a1754b06e47d5997/lib/buildkite/test_collector/network.rb#L58)
 - [Monkey patching for sleep](https://github.com/buildkite/test-collector-ruby/blob/9ac2b465cad647790d89b501a1754b06e47d5997/lib/buildkite/test_collector/object.rb#L20)
 
-Note: the Ruby test collector is the only Test Analytics collector that automatically captures and transmits span data. This Python collector can transmit information, but data capture must be done manually at this time.
+Note: the Ruby test collector is the only Test Engine collector that automatically captures and transmits span data. This Python collector can transmit information, but data capture must be done manually at this time.
 
 ## 🔜 Roadmap
 
@@ -81,7 +81,7 @@ And run the tests:
 uv run pytest
 ```
 
-Useful resources for developing collectors include the [Buildkite Test Analytics docs](https://buildkite.com/docs/test-analytics) and the [RSpec and Minitest collectors](https://github.com/buildkite/rspec-buildkite-analytics).
+Useful resources for developing collectors include the [Buildkite Test Engine docs](https://buildkite.com/docs/test-engine) and the [RSpec and Minitest collectors](https://github.com/buildkite/test-collector-ruby).
 
 ## 👩‍💻 Contributing
 

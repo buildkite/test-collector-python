@@ -116,6 +116,35 @@ def test_pytest_runtest_logreport_simple_fail(fake_env):
     assert isinstance(test_data.result, TestResultFailed)
 
 
+def test_pytest_runtest_logreport_fail_exception_in_setup(fake_env):
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    location = ("", None, "")
+    try:
+        raise Exception("a fake fixture exception")
+    except Exception as e:
+        longrepr = ExceptionInfo.from_exception(e)
+    report = TestReport(nodeid="", location=location, keywords={}, outcome="failed", longrepr=longrepr, when="setup")
+
+    plugin.pytest_runtest_logstart(report.nodeid, location)
+    plugin.pytest_runtest_logreport(report)
+    test_data = plugin.in_flight.get(report.nodeid)
+    plugin.pytest_runtest_logfinish(report.nodeid, location)
+
+    assert isinstance(test_data, TestData)
+    assert isinstance(test_data.result, TestResultFailed)
+    assert test_data.result.failure_reason == "Exception: a fake fixture exception"
+
+    assert isinstance(test_data.result.failure_expanded, list)
+    fe = test_data.result.failure_expanded[0]
+    assert list(fe.keys()) == ["expanded", "backtrace"]
+    assert isinstance(fe["expanded"], list)
+    assert len(fe["expanded"]) > 0
+    assert isinstance(fe["backtrace"], list)
+    assert len(fe["backtrace"]) > 0
+
+
 def test_pytest_runtest_logreport_simple_skip(fake_env):
     payload = Payload.init(fake_env)
     plugin = BuildkitePlugin(payload)

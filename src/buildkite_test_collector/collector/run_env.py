@@ -6,8 +6,7 @@ from uuid import uuid4
 
 from .constants import COLLECTOR_NAME, VERSION # pylint: disable=W0611
 
-# pylint: disable=R0902
-
+# pylint: disable=too-few-public-methods
 class RunEnvBuilder:
     """Builder class for RunEnv that allows injection of environment variables
 
@@ -116,6 +115,7 @@ class RunEnvBuilder:
         )
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class RunEnv:
     """The detected RunEnv"""

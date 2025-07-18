@@ -19,9 +19,13 @@ class BuildkitePlugin:
 
     def pytest_runtest_logstart(self, nodeid, location):
         """pytest_runtest_logstart hook callback"""
-        logger.debug('Enter pytest_runtest_logstart for %s', nodeid)
-        if not self.payload.is_started():
+        logger.debug('hook=pytest_runtest_logstart nodeid=%s', nodeid)
+
+        if self.payload.is_started():
+            logger.debug('-> already started_at=%s(monotonic)', self.payload.started_at)
+        else:
             self.payload = self.payload.started()
+            logger.debug('-> started_at=%s(monotonic)', self.payload.started_at)
 
         chunks = nodeid.split("::")
 
@@ -36,48 +40,26 @@ class BuildkitePlugin:
 
     def pytest_runtest_logreport(self, report):
         """pytest_runtest_logreport hook callback to get test outcome after test call"""
+        logger.debug('hook=pytest_runtest_logreport nodeid=%s when=%s', report.nodeid, report.when)
 
         # This hook is called three times during the lifecycle of a test:
         # after the setup phase, the call phase, and the teardown phase.
-        # Since we want to capture the outcome from the call phase,
-        # we only proceed when this hook is triggered following the call phase.
+        # We capture outcomes from the call phase, or setup phase if it failed
+        # (since setup failures prevent the call phase from running).
         # See: https://github.com/buildkite/test-collector-python/pull/45
-        if report.when != 'call':
-            return
-
-        nodeid = report.nodeid
-        test_data = self.in_flight.get(nodeid)
-        logger.debug('Enter pytest_runtest_logreport for %s', nodeid)
-
-        if test_data:
-            if report.passed:
-                test_data = test_data.passed()
-
-            if report.failed:
-                failure_reason, failure_expanded = failure_reasons(longrepr=report.longrepr)
-                test_data = test_data.failed(
-                    failure_reason=failure_reason,
-                    failure_expanded=failure_expanded
-                )
-
-            if report.skipped:
-                test_data = test_data.skipped()
-
-            # TestData is immutable.
-            # We need to replace the test_data in `in_flight` with updated test_data,
-            # so we can get the correct result when we process it during the teardown hook.
-            self.in_flight[nodeid] = test_data
+        if report.when == 'call' or (report.when == 'setup' and report.failed):
+            self.update_test_result(report)
 
     # This hook only runs in xdist worker thread, not controller thread.
     # We used to rely on pytest_runtest_teardown, but somehow xdist will ignore it
     # in both controller and worker thread.
     def pytest_runtest_makereport(self, item, call):
         """pytest_runtest_hook hook callback to mark test as finished and add it to the payload"""
+        logger.debug('hook=pytest_runtest_makereport nodeid=%s when=%s', item.nodeid, call.when)
 
         if call.when != 'teardown':
             return
 
-        logger.debug('Enter pytest_runtest_makereport for %s', item.nodeid)
         test_data = self.in_flight.get(item.nodeid)
 
         if test_data:
@@ -97,7 +79,8 @@ class BuildkitePlugin:
     # In that case, it's necessary for this hook to work as a fallback mechanism.
     def pytest_runtest_logfinish(self, nodeid, location):  # pylint: disable=unused-argument
         """pytest_runtest_logfinish hook always runs in the very end"""
-        logger.debug('Enter pytest_runtest_logfinish for %s', nodeid)
+        logger.debug('hook=pytest_runtest_logfinish nodeid=%s', nodeid)
+
         if self.finalize_test(nodeid):
             # This is expected to happen in xdist controller thread.
             # Where it would skip many pytest_runtest_xxx hooks
@@ -106,16 +89,44 @@ class BuildkitePlugin:
                 'Falling back to pytest_runtest_logfinish'
             )
 
+    def update_test_result(self, report):
+        test_data = self.in_flight.get(report.nodeid)
+
+        if test_data:
+            if report.passed:
+                logger.debug('-> test passed')
+                test_data = test_data.passed()
+
+            if report.failed:
+                failure_reason, failure_expanded = failure_reasons(longrepr=report.longrepr)
+                logger.debug('-> test failed: %s', failure_reason)
+                test_data = test_data.failed(
+                    failure_reason=failure_reason,
+                    failure_expanded=failure_expanded
+                )
+
+            if report.skipped:
+                logger.debug('-> test skipped')
+                test_data = test_data.skipped()
+
+            # TestData is immutable.
+            # We need to replace the test_data in `in_flight` with updated test_data,
+            # so we can get the correct result when we process it during the teardown hook.
+            self.in_flight[report.nodeid] = test_data
+
+
     def finalize_test(self, nodeid):
         """ Attempting to move test data for a nodeid to payload area for upload """
-        logger.debug('Entering finalize_test for %s', nodeid)
+        logger.debug('-> finalize_test nodeid=%s', nodeid)
         test_data = self.in_flight.get(nodeid)
-        if test_data:
-            del self.in_flight[nodeid]
-            test_data = test_data.finish()
-            self.payload = self.payload.push_test_data(test_data)
-            return True
-        return False
+        if not test_data:
+            logger.debug('-> finalize_test: not in flight: %s', nodeid)
+            return False
+        del self.in_flight[nodeid]
+        test_data = test_data.finish()
+        logger.debug('-> finalize_test nodeid=%s duration=%s', nodeid, test_data.history.duration)
+        self.payload = self.payload.push_test_data(test_data)
+        return True
 
     def save_payload_as_json(self, path, merge=False):
         """Save payload into a json file, merging with existing data if merge is True"""

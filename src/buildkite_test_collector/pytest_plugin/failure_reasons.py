@@ -21,56 +21,94 @@ def failure_reasons(
         - A string with the failure reason or None if not available
         - A list of mappings with additional failure details or None if not available
     """
-    match longrepr:
-        case None:
-            return None, None
+    if longrepr is None:
+        return None, None
 
-        case str() as s:
-            lines = s.splitlines()
-            failure_reason = lines[0] if lines else s
-            return failure_reason, [{"expanded": lines[1:]}]
+    if isinstance(longrepr, str):
+        return _handle_string_longrepr(longrepr)
 
-        case (path, line, msg)  if \
-                isinstance(path, str) and isinstance(line, int) and isinstance(msg, str):
-            failure_reason = msg
-            return failure_reason, [{"expanded": [], "backtrace": [f"{path}:{line}"]}]
+    if (isinstance(longrepr, tuple) and len(longrepr) == 3 and
+          isinstance(longrepr[0], str) and
+          isinstance(longrepr[1], int) and
+          isinstance(longrepr[2], str)):
+        path, line, msg = longrepr
+        return _handle_tuple_longrepr(path, line, msg)
 
-        case ExceptionInfo() as exc_info:
-            failure_reason = exc_info.exconly()
-            expanded = []
-            backtrace = []
+    if isinstance(longrepr, ExceptionInfo):
+        return _handle_exception_info_longrepr(longrepr)
 
-            if hasattr(exc_info, "traceback") and exc_info.traceback:
-                for entry in exc_info.traceback:
-                    backtrace.append(f"{entry.path}:{entry.lineno}: {entry.name}")
-                    source = entry.getsource() if hasattr(entry, "getsource") else None
-                    if source:
-                        expanded.extend(str(line) for line in source)
+    if isinstance(longrepr, ExceptionRepr) and longrepr.reprcrash is not None:
+        return _handle_exception_repr_longrepr(longrepr)
 
-            failure_expanded = {}
-            if len(expanded) > 0:
-                failure_expanded["expanded"] = expanded
-            if len(backtrace) > 0:
-                failure_expanded["backtrace"] = backtrace
+    return _handle_default_longrepr(longrepr)
 
-            return failure_reason, [failure_expanded]
 
-        case ExceptionRepr() as er if er.reprcrash is not None:
-            failure_reason = er.reprcrash.message # e.g. "ZeroDivisionError: division by zero"
-            failure_expanded = [{"expanded": str(er).splitlines()}]
-            try:
-                failure_expanded[0]["backtrace"] = [
-                    str(getattr(entry, 'reprfileloc', entry))
-                    for entry in er.reprtraceback.reprentries
-                ]
-            except AttributeError:
-                pass
-            return failure_reason, failure_expanded
+def _handle_string_longrepr(
+    s: str
+) -> tuple[str | None, Iterable[Mapping[str, Iterable[str]]] | None]:
+    """Handle string longrepr case"""
+    lines = s.splitlines()
+    failure_reason = lines[0] if lines else s
+    return failure_reason, [{"expanded": lines[1:]}]
 
-        case _:
-            lines = str(longrepr).splitlines()
-            if len(lines) == 0:
-                return None, None
-            if len(lines) == 1:
-                return lines[0], None
-            return lines[0], [{"expanded": lines[1:]}]
+
+def _handle_tuple_longrepr(
+    path: str,
+    line: int,
+    msg: str
+) -> tuple[str | None, Iterable[Mapping[str, Iterable[str]]] | None]:
+    """Handle tuple longrepr case (path, line, msg)"""
+    failure_reason = msg
+    return failure_reason, [{"expanded": [], "backtrace": [f"{path}:{line}"]}]
+
+
+def _handle_exception_info_longrepr(
+    exc_info: ExceptionInfo[BaseException]
+) -> tuple[str | None, Iterable[Mapping[str, Iterable[str]]] | None]:
+    """Handle ExceptionInfo longrepr case"""
+    failure_reason = exc_info.exconly()
+    expanded = []
+    backtrace = []
+
+    if hasattr(exc_info, "traceback") and exc_info.traceback:
+        for entry in exc_info.traceback:
+            backtrace.append(f"{entry.path}:{entry.lineno}: {entry.name}")
+            source = entry.getsource() if hasattr(entry, "getsource") else None
+            if source:
+                expanded.extend(str(line) for line in source)
+
+    failure_expanded = {}
+    if len(expanded) > 0:
+        failure_expanded["expanded"] = expanded
+    if len(backtrace) > 0:
+        failure_expanded["backtrace"] = backtrace
+
+    return failure_reason, [failure_expanded]
+
+
+def _handle_exception_repr_longrepr(
+    er: ExceptionRepr
+) -> tuple[str | None, Iterable[Mapping[str, Iterable[str]]] | None]:
+    """Handle ExceptionRepr longrepr case"""
+    failure_reason = er.reprcrash.message  # e.g. "ZeroDivisionError: division by zero"
+    failure_expanded = [{"expanded": str(er).splitlines()}]
+    try:
+        failure_expanded[0]["backtrace"] = [
+            str(getattr(entry, 'reprfileloc', entry))
+            for entry in er.reprtraceback.reprentries
+        ]
+    except AttributeError:
+        pass
+    return failure_reason, failure_expanded
+
+
+def _handle_default_longrepr(
+    longrepr: None | ExceptionInfo[BaseException] | tuple[str, int, str] | str | TerminalRepr
+) -> tuple[str | None, Iterable[Mapping[str, Iterable[str]]] | None]:
+    """Handle default longrepr case"""
+    lines = str(longrepr).splitlines()
+    if len(lines) == 0:
+        return None, None
+    if len(lines) == 1:
+        return lines[0], None
+    return lines[0], [{"expanded": lines[1:]}]

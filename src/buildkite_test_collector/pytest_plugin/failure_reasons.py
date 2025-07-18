@@ -49,8 +49,11 @@ def _handle_string_longrepr(
 ) -> tuple[str | None, Iterable[Mapping[str, Iterable[str]]] | None]:
     """Handle string longrepr case"""
     lines = s.splitlines()
-    failure_reason = lines[0] if lines else s
-    return failure_reason, [{"expanded": lines[1:]}]
+    if len(lines) == 0:
+        return None, None
+    if len(lines) == 1:
+        return lines[0], None
+    return lines[0], [{"expanded": lines[1:]}]
 
 
 def _handle_tuple_longrepr(
@@ -107,9 +110,4 @@ def _handle_default_longrepr(
     longrepr: None | ExceptionInfo[BaseException] | tuple[str, int, str] | str | TerminalRepr
 ) -> tuple[str | None, Iterable[Mapping[str, Iterable[str]]] | None]:
     """Handle default longrepr case"""
-    lines = str(longrepr).splitlines()
-    if len(lines) == 0:
-        return None, None
-    if len(lines) == 1:
-        return lines[0], None
-    return lines[0], [{"expanded": lines[1:]}]
+    return _handle_string_longrepr(str(longrepr))

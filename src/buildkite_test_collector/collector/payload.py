@@ -1,4 +1,4 @@
-"""Buildkite Test Analytics payload"""
+"""Buildkite Test Engine payload"""
 
 from dataclasses import dataclass, replace, field
 from typing import Dict, Tuple, Optional, Union, Literal, List

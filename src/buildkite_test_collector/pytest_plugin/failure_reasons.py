@@ -1,5 +1,6 @@
 """Buildkite Test Engine PyTest failure reason mapping"""
 
+from __future__ import annotations
 from typing import Iterable, Mapping
 
 # importing these privates isn't ideal, but we're only using them for type checking

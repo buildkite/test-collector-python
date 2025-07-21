@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Mapping
 from uuid import uuid4
 
-from .constants import COLLECTOR_NAME, VERSION # pylint: disable=W0611
+from .constants import COLLECTOR_NAME, VERSION
 
 # pylint: disable=too-few-public-methods
 class RunEnvBuilder:
@@ -140,7 +140,7 @@ class RunEnv:
             "commit_sha": self.commit_sha,
             "message": self.message,
             "url": self.url,
-            "collector": f"python-{COLLECTOR_NAME}",
+            "collector": COLLECTOR_NAME,
             "version": VERSION,
             "language_version": f"{platform.python_version()}"
         }

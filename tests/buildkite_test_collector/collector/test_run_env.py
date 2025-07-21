@@ -3,7 +3,7 @@ from random import randint
 from uuid import uuid4, UUID
 
 from buildkite_test_collector.collector.constants import VERSION
-from buildkite_test_collector.collector.run_env import RunEnv, RunEnvBuilder
+from buildkite_test_collector.collector.run_env import RunEnvBuilder
 
 
 def test_detect_env_with_buildkite_api_env_vars_returns_the_correct_environment():

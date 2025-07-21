@@ -89,7 +89,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/buildk
 
 ## 🚀 Releasing
 
-1. Open a new PR bumping the version number in `constants.py`, make sure the PR title contains `[release]`.
+1. Open a new PR bumping the version number in `pyproject.toml`, make sure the PR title contains `[release]`.
 2. Get the PR approved and merged, this will trigger the release pipeline.
 3. (Optional) In the event of step 3 failure, run `.buildkite/steps/release-pypi` locally with your own credentials.
 4. Create a [new github release](https://github.com/buildkite/test-collector-python/releases) for prosperity, you can create a tag as you create the release.

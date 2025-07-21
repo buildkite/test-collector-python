@@ -1,3 +1,4 @@
+import sys
 from random import randint
 from uuid import uuid4, UUID
 
@@ -102,3 +103,5 @@ def test_env_as_json(fake_env):
     assert json["url"] == fake_env.url
     assert json["collector"] == 'python-buildkite-test-collector'
     assert json["version"] == VERSION
+    expected_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    assert json["language_version"] == expected_version

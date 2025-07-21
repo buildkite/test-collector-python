@@ -161,7 +161,8 @@ def test_test_data_as_json_when_failed(failed_test):
     json = failed_test.as_json(Instant.now())
 
     assert json["result"] == "failed"
-    assert json["failure_reason"] == failed_test.result.failure_reason
+    assert json["failure_reason"] == "bogus"
+    assert json["failure_expanded"] == [{'expanded': ['test failed'], 'backtrace': ['test.py:1']}]
 
 
 def test_test_data_as_json_when_skipped(skipped_test):

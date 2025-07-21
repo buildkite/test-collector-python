@@ -90,6 +90,7 @@ class BuildkitePlugin:
             )
 
     def update_test_result(self, report):
+        """Update test result based on pytest report"""
         test_data = self.in_flight.get(report.nodeid)
 
         if test_data:

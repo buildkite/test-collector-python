@@ -1,5 +1,6 @@
 """Test Engine run_env"""
 
+import platform
 from dataclasses import dataclass
 from typing import Dict, Optional, Mapping
 from uuid import uuid4
@@ -140,7 +141,8 @@ class RunEnv:
             "message": self.message,
             "url": self.url,
             "collector": f"python-{COLLECTOR_NAME}",
-            "version": VERSION
+            "version": VERSION,
+            "language_version": f"{platform.python_version()}"
         }
 
         return {k: v for k, v in attrs.items() if v is not None}

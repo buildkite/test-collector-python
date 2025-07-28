@@ -11,21 +11,36 @@ from buildkite_test_collector.collector.api import API
 from buildkite_test_collector.collector.payload import Payload
 from requests.exceptions import ReadTimeout, ConnectTimeout
 
+def test_submit_local_returns_none(capfd):
+    env = {"CI": None}
+    payload = Payload.init(RunEnvBuilder(env).build())
 
-def test_submit_with_missing_api_key_environment_variable_returns_none():
+    api = API(env)
+    assert next(api.submit(payload)) is None
+    captured = capfd.readouterr()
+
+    assert not captured.err.startswith("buildkite-test-collector - WARNING -")
+
+def test_submit_with_missing_api_key_environment_variable_returns_none(capfd):
     env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": None}
     payload = Payload.init(RunEnvBuilder(env).build())
 
     api = API(env)
     assert next(api.submit(payload)) is None
+    captured = capfd.readouterr()
+
+    assert captured.err.startswith("buildkite-test-collector - WARNING -")
 
 
-def test_submit_with_invalid_api_key_environment_variable_returns_none():
+def test_submit_with_invalid_api_key_environment_variable_returns_none(capfd):
     env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": "\n"}
     payload = Payload.init(RunEnvBuilder(env).build())
 
     api = API(env)
     assert next(api.submit(payload)) is None
+    captured = capfd.readouterr()
+
+    assert captured.err.startswith("buildkite-test-collector - WARNING -")
 
 @responses.activate
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")

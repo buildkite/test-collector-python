@@ -12,6 +12,8 @@ from ..pytest_plugin.logger import logger
 class API:
     """Buildkite Test Engine API client"""
 
+    CI_TOKEN = "CI"
+
     ENV_TOKEN = "BUILDKITE_ANALYTICS_TOKEN"
     ENV_API_URL = "BUILDKITE_ANALYTICS_API_URL"
 
@@ -19,12 +21,16 @@ class API:
 
     def __init__(self, env: Mapping[str, Optional[str]]):
         """Initialize the API client with environment variables"""
+        self.ci = env.get(self.CI_TOKEN)
         self.token = env.get(self.ENV_TOKEN)
         self.api_url = env.get(self.ENV_API_URL) or self.DEFAULT_API_URL
 
     def submit(self, payload: Payload, batch_size=100) -> Generator[Optional[Response], Any, Any]:
         """Submit a payload to the API"""
         response = None
+
+        if not self.ci:
+            yield None
 
         if not self.token:
             logger.warning("No %s environment variable present", self.ENV_TOKEN)

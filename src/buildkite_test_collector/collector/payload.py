@@ -55,7 +55,30 @@ class TestSpan:
         }
 
         if self.detail is not None:
-            attrs["detail"] = self.detail
+            # Format detail based on section type to match the expected Avro schema
+            # See: https://buildkite.com/docs/test-analytics/importing-json#json-test-results-data-reference-span-objects
+            if self.section == "sql":
+                attrs["detail"] = {"query": self.detail}
+            elif self.section == "annotation":
+                attrs["detail"] = {"content": self.detail}
+            elif self.section == "http":
+                # For HTTP spans, the detail should be a dict with method, url, lib
+                # If it's a string, handle it gracefully
+                if isinstance(self.detail, dict):
+                    attrs["detail"] = self.detail
+                else:
+                    # Fallback: if provided a string, treat it as a URL
+                    attrs["detail"] = {
+                        "method": "GET",
+                        "url": self.detail,
+                        "lib": "unknown"
+                    }
+            elif self.section == "sleep":
+                # Sleep spans don't need detail
+                pass
+            else:
+                # For unknown/custom sections, keep detail as-is
+                attrs["detail"] = self.detail
 
         if self.start_at is not None:
             attrs["start_at"] = (self.start_at - started_at).total_seconds()

@@ -56,6 +56,7 @@ class TestSpan:
 
         if self.detail is not None:
             # Format detail based on section type to match the expected Avro schema
+            # pylint: disable=C0301
             # See: https://buildkite.com/docs/test-analytics/importing-json#json-test-results-data-reference-span-objects
             if self.section == "sql":
                 attrs["detail"] = {"query": self.detail}

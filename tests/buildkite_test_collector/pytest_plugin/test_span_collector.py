@@ -7,7 +7,8 @@ from buildkite_test_collector.collector.payload import TestSpan
 def test_record_adds_span_to_plugin(span_collector):
     span_collector.record(TestSpan(
         section='http',
-        duration=timedelta(seconds=3)))
+        duration=timedelta(seconds=3),
+        detail={'method': 'GET', 'url': 'https://example.com', 'lib': 'requests'}))
 
     assert len(span_collector.current_test().history.children) == 1
 

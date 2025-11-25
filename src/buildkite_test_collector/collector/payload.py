@@ -40,12 +40,20 @@ class TestSpan:
 
     Buildkite Test Analtics supports some basic tracing to allow insight into
     the runtime performance your tests.
+
+    The detail field should be a dict matching the expected format for each section type:
+    - sql: {"query": str}
+    - annotation: {"content": str}
+    - http: {"method": str, "url": str, "lib": str}
+    - sleep: no detail required
+
+    See: https://buildkite.com/docs/test-engine/test-collection/importing-json#json-test-results-data-reference-detail-objects  # pylint: disable=C0301
     """
     section: Literal['http', 'sql', 'sleep', 'annotation']
     duration: timedelta
     start_at: Optional[Instant] = None
     end_at: Optional[Instant] = None
-    detail: Optional[str] = None
+    detail: Optional[Dict[str, str]] = None
 
     def as_json(self, started_at: Instant) -> JsonDict:
         """Convert this span into a Dict for eventual serialisation into JSON"""
@@ -55,31 +63,7 @@ class TestSpan:
         }
 
         if self.detail is not None:
-            # Format detail based on section type to match the expected Avro schema
-            # pylint: disable=C0301
-            # See: https://buildkite.com/docs/test-analytics/importing-json#json-test-results-data-reference-span-objects
-            if self.section == "sql":
-                attrs["detail"] = {"query": self.detail}
-            elif self.section == "annotation":
-                attrs["detail"] = {"content": self.detail}
-            elif self.section == "http":
-                # For HTTP spans, the detail should be a dict with method, url, lib
-                # If it's a string, handle it gracefully
-                if isinstance(self.detail, dict):
-                    attrs["detail"] = self.detail
-                else:
-                    # Fallback: if provided a string, treat it as a URL
-                    attrs["detail"] = {
-                        "method": "GET",
-                        "url": self.detail,
-                        "lib": "unknown"
-                    }
-            elif self.section == "sleep":
-                # Sleep spans don't need detail
-                pass
-            else:
-                # For unknown/custom sections, keep detail as-is
-                attrs["detail"] = self.detail
+            attrs["detail"] = self.detail
 
         if self.start_at is not None:
             attrs["start_at"] = (self.start_at - started_at).total_seconds()

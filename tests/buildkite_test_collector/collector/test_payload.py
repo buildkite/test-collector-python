@@ -3,7 +3,7 @@ from functools import reduce
 
 import pytest
 
-from buildkite_test_collector.collector.payload import Payload, TestHistory, TestData, TestResultFailed, TestResultPassed, TestResultSkipped
+from buildkite_test_collector.collector.payload import Payload, TestHistory, TestData, TestResultFailed, TestResultPassed, TestResultSkipped, TestSpan
 from buildkite_test_collector.collector.instant import Instant
 
 
@@ -188,3 +188,105 @@ class TestTestDataTagExecution:
 
         with pytest.raises(TypeError):
             successful_test.tag_execution(777, "lucky")
+
+
+class TestSpanValidation:
+    """Tests for TestSpan detail validation"""
+
+    def test_sql_span_with_valid_detail(self):
+        """SQL span with correct detail structure should succeed"""
+        span = TestSpan(
+            section='sql',
+            duration=timedelta(seconds=1),
+            detail={'query': 'SELECT * FROM users'}
+        )
+        assert span.detail == {'query': 'SELECT * FROM users'}
+
+    def test_sql_span_without_query_field_fails(self):
+        """SQL span without 'query' field should raise ValueError"""
+        with pytest.raises(ValueError, match="SQL span detail must contain 'query' field"):
+            TestSpan(
+                section='sql',
+                duration=timedelta(seconds=1),
+                detail={'wrong_field': 'SELECT * FROM users'}
+            )
+
+    def test_annotation_span_with_valid_detail(self):
+        """Annotation span with correct detail structure should succeed"""
+        span = TestSpan(
+            section='annotation',
+            duration=timedelta(seconds=1),
+            detail={'content': 'Test annotation'}
+        )
+        assert span.detail == {'content': 'Test annotation'}
+
+    def test_annotation_span_without_content_field_fails(self):
+        """Annotation span without 'content' field should raise ValueError"""
+        with pytest.raises(ValueError, match="Annotation span detail must contain 'content' field"):
+            TestSpan(
+                section='annotation',
+                duration=timedelta(seconds=1),
+                detail={'wrong_field': 'Test annotation'}
+            )
+
+    def test_http_span_with_valid_detail(self):
+        """HTTP span with all required fields should succeed"""
+        span = TestSpan(
+            section='http',
+            duration=timedelta(seconds=1),
+            detail={'method': 'GET', 'url': 'https://example.com', 'lib': 'requests'}
+        )
+        assert span.detail == {'method': 'GET', 'url': 'https://example.com', 'lib': 'requests'}
+
+    def test_http_span_missing_method_fails(self):
+        """HTTP span missing 'method' field should raise ValueError"""
+        with pytest.raises(ValueError, match="HTTP span detail missing required fields"):
+            TestSpan(
+                section='http',
+                duration=timedelta(seconds=1),
+                detail={'url': 'https://example.com', 'lib': 'requests'}
+            )
+
+    def test_http_span_missing_multiple_fields_fails(self):
+        """HTTP span missing multiple fields should raise ValueError"""
+        with pytest.raises(ValueError, match="HTTP span detail missing required fields"):
+            TestSpan(
+                section='http',
+                duration=timedelta(seconds=1),
+                detail={'method': 'GET'}
+            )
+
+    def test_sleep_span_without_detail(self):
+        """Sleep span without detail should succeed"""
+        span = TestSpan(
+            section='sleep',
+            duration=timedelta(seconds=1)
+        )
+        assert span.detail is None
+
+    def test_sleep_span_with_detail_is_allowed(self):
+        """Sleep span with detail (though not required) should be allowed"""
+        span = TestSpan(
+            section='sleep',
+            duration=timedelta(seconds=1),
+            detail={'reason': 'rate limiting'}
+        )
+        assert span.detail == {'reason': 'rate limiting'}
+
+    def test_span_with_none_detail(self):
+        """Span with None detail should succeed"""
+        span = TestSpan(
+            section='sql',
+            duration=timedelta(seconds=1),
+            detail=None
+        )
+        assert span.detail is None
+
+    def test_span_with_string_detail_fails(self):
+        """Span with string instead of dict should raise TypeError"""
+        with pytest.raises(TypeError, match="detail must be a dict, got str"):
+            TestSpan(
+                section='sql',
+                duration=timedelta(seconds=1),
+                detail='SELECT * FROM users'
+            )

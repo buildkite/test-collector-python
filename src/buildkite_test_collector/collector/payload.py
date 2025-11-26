@@ -55,6 +55,29 @@ class TestSpan:
     end_at: Optional[Instant] = None
     detail: Optional[Dict[str, str]] = None
 
+    def __post_init__(self):
+        """Validate detail structure matches the section type requirements"""
+        if self.detail is None:
+            return
+
+        if not isinstance(self.detail, dict):
+            raise TypeError(f"detail must be a dict, got {type(self.detail).__name__}")
+
+        if self.section == 'sql':
+            if 'query' not in self.detail:
+                raise ValueError("SQL span detail must contain 'query' field")
+        elif self.section == 'annotation':
+            if 'content' not in self.detail:
+                raise ValueError("Annotation span detail must contain 'content' field")
+        elif self.section == 'http':
+            required = {'method', 'url', 'lib'}
+            missing = required - set(self.detail.keys())
+            if missing:
+                raise ValueError(f"HTTP span detail missing required fields: {missing}")
+        elif self.section == 'sleep':
+            # Sleep spans don't need detail, but if provided we'll allow it
+            pass
+
     def as_json(self, started_at: Instant) -> JsonDict:
         """Convert this span into a Dict for eventual serialisation into JSON"""
         attrs = {

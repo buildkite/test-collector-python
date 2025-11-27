@@ -14,7 +14,7 @@ def test_record_adds_span_to_plugin(span_collector):
 
 
 def test_measure_adds_span_to_plugin(span_collector):
-    with span_collector.measure('annotation'):
+    with span_collector.measure('annotation', {'content': 'test annotation'}):
         time.sleep(0.001)
 
     assert len(span_collector.current_test().history.children) == 1

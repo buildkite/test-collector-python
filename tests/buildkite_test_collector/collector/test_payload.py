@@ -3,8 +3,16 @@ from functools import reduce
 
 import pytest
 
-from buildkite_test_collector.collector.payload import Payload, TestHistory, TestData, TestResultFailed, TestResultPassed, TestResultSkipped, TestSpan
 from buildkite_test_collector.collector.instant import Instant
+from buildkite_test_collector.collector.payload import (
+    Payload,
+    TestData,
+    TestHistory,
+    TestResultFailed,
+    TestResultPassed,
+    TestResultSkipped,
+    TestSpan,
+)
 
 
 def test_payload_init_has_empty_data(fake_env):
@@ -24,8 +32,9 @@ def test_payload_started_sets_started_at_time(fake_env):
 
 
 def test_payload_into_batches_works_as_advertised(payload, successful_test):
-    payload = reduce(lambda p, _: p.push_test_data(
-        successful_test), range(100), payload)
+    payload = reduce(
+        lambda p, _: p.push_test_data(successful_test), range(100), payload
+    )
 
     payloads = payload.into_batches(33)
 
@@ -57,10 +66,7 @@ def test_payload_as_json(payload, successful_test):
 
 
 def test_test_history_with_no_end_at_is_not_finished():
-    hist = TestHistory(
-        start_at=Instant.now(),
-        end_at=None,
-        duration=None)
+    hist = TestHistory(start_at=Instant.now(), end_at=None, duration=None)
 
     assert hist.is_finished() is not True
 
@@ -70,10 +76,7 @@ def test_test_history_with_end_at_is_finished():
     duration = timedelta(minutes=2, seconds=18)
     end_at = start_at + duration
 
-    hist = TestHistory(
-        start_at=start_at,
-        end_at=end_at,
-        duration=duration)
+    hist = TestHistory(start_at=start_at, end_at=end_at, duration=duration)
 
     assert hist.is_finished() is True
 
@@ -84,10 +87,7 @@ def test_test_history_as_json():
     duration = timedelta(minutes=2, seconds=18)
     end_at = start_at + duration
 
-    hist = TestHistory(
-        start_at=start_at,
-        end_at=end_at,
-        duration=duration)
+    hist = TestHistory(start_at=start_at, end_at=end_at, duration=duration)
 
     json = hist.as_json(now)
 
@@ -99,13 +99,16 @@ def test_test_history_as_json():
 
 
 def test_test_data_start(successful_test):
-    test_data = TestData.start(id=successful_test.id,
-                               scope=successful_test.scope,
-                               name=successful_test.name,
-                               location=successful_test.location)
+    test_data = TestData.start(
+        id=successful_test.id,
+        scope=successful_test.scope,
+        name=successful_test.name,
+        location=successful_test.location,
+    )
 
     assert test_data.history.start_at.seconds == pytest.approx(
-        Instant.now().seconds, 1.0)
+        Instant.now().seconds, 1.0
+    )
 
 
 def test_test_data_finish_when_already_finished_is_a_noop(successful_test):
@@ -115,8 +118,7 @@ def test_test_data_finish_when_already_finished_is_a_noop(successful_test):
 def test_test_data_finish(incomplete_test):
     test_data = incomplete_test.finish()
 
-    assert test_data.history.end_at.seconds == pytest.approx(
-        Instant.now().seconds, 1.0)
+    assert test_data.history.end_at.seconds == pytest.approx(Instant.now().seconds, 1.0)
     assert test_data.history.duration.total_seconds() == pytest.approx(0, abs=0.5)
 
 
@@ -162,13 +164,16 @@ def test_test_data_as_json_when_failed(failed_test):
 
     assert json["result"] == "failed"
     assert json["failure_reason"] == "bogus"
-    assert json["failure_expanded"] == [{'expanded': ['test failed'], 'backtrace': ['test.py:1']}]
+    assert json["failure_expanded"] == [
+        {"expanded": ["test failed"], "backtrace": ["test.py:1"]}
+    ]
 
 
 def test_test_data_as_json_when_skipped(skipped_test):
     json = skipped_test.as_json(Instant.now())
 
     assert json["result"] == "skipped"
+
 
 class TestTestDataTagExecution:
     def test_test_data_tag_execution(self, successful_test):
@@ -196,97 +201,103 @@ class TestSpanValidation:
     def test_sql_span_with_valid_detail(self):
         """SQL span with correct detail structure should succeed"""
         span = TestSpan(
-            section='sql',
+            section="sql",
             duration=timedelta(seconds=1),
-            detail={'query': 'SELECT * FROM users'}
+            detail={"query": "SELECT * FROM users"},
         )
-        assert span.detail == {'query': 'SELECT * FROM users'}
+        assert span.detail == {"query": "SELECT * FROM users"}
 
     def test_sql_span_without_query_field_fails(self):
         """SQL span without 'query' field should raise ValueError"""
-        with pytest.raises(ValueError, match="SQL span detail must contain 'query' field"):
+        with pytest.raises(
+            ValueError, match="SQL span detail must contain 'query' field"
+        ):
             TestSpan(
-                section='sql',
+                section="sql",
                 duration=timedelta(seconds=1),
-                detail={'wrong_field': 'SELECT * FROM users'}
+                detail={"wrong_field": "SELECT * FROM users"},
             )
 
     def test_annotation_span_with_valid_detail(self):
         """Annotation span with correct detail structure should succeed"""
         span = TestSpan(
-            section='annotation',
+            section="annotation",
             duration=timedelta(seconds=1),
-            detail={'content': 'Test annotation'}
+            detail={"content": "Test annotation"},
         )
-        assert span.detail == {'content': 'Test annotation'}
+        assert span.detail == {"content": "Test annotation"}
 
     def test_annotation_span_without_content_field_fails(self):
         """Annotation span without 'content' field should raise ValueError"""
-        with pytest.raises(ValueError, match="Annotation span detail must contain 'content' field"):
+        with pytest.raises(
+            ValueError, match="Annotation span detail must contain 'content' field"
+        ):
             TestSpan(
-                section='annotation',
+                section="annotation",
                 duration=timedelta(seconds=1),
-                detail={'wrong_field': 'Test annotation'}
+                detail={"wrong_field": "Test annotation"},
             )
 
     def test_http_span_with_valid_detail(self):
         """HTTP span with all required fields should succeed"""
         span = TestSpan(
-            section='http',
+            section="http",
             duration=timedelta(seconds=1),
-            detail={'method': 'GET', 'url': 'https://example.com', 'lib': 'requests'}
+            detail={"method": "GET", "url": "https://example.com", "lib": "requests"},
         )
-        assert span.detail == {'method': 'GET', 'url': 'https://example.com', 'lib': 'requests'}
+        assert span.detail == {
+            "method": "GET",
+            "url": "https://example.com",
+            "lib": "requests",
+        }
 
     def test_http_span_missing_method_fails(self):
         """HTTP span missing 'method' field should raise ValueError"""
-        with pytest.raises(ValueError, match="HTTP span detail missing required fields"):
+        with pytest.raises(
+            ValueError, match="HTTP span detail missing required fields"
+        ):
             TestSpan(
-                section='http',
+                section="http",
                 duration=timedelta(seconds=1),
-                detail={'url': 'https://example.com', 'lib': 'requests'}
+                detail={"url": "https://example.com", "lib": "requests"},
             )
 
     def test_http_span_missing_multiple_fields_fails(self):
         """HTTP span missing multiple fields should raise ValueError"""
-        with pytest.raises(ValueError, match="HTTP span detail missing required fields"):
+        with pytest.raises(
+            ValueError, match="HTTP span detail missing required fields"
+        ):
             TestSpan(
-                section='http',
-                duration=timedelta(seconds=1),
-                detail={'method': 'GET'}
+                section="http", duration=timedelta(seconds=1), detail={"method": "GET"}
             )
 
     def test_sleep_span_without_detail(self):
         """Sleep span without detail should succeed"""
-        span = TestSpan(
-            section='sleep',
-            duration=timedelta(seconds=1)
-        )
+        span = TestSpan(section="sleep", duration=timedelta(seconds=1))
         assert span.detail is None
 
     def test_sleep_span_with_detail_is_allowed(self):
         """Sleep span with detail (though not required) should be allowed"""
         span = TestSpan(
-            section='sleep',
+            section="sleep",
             duration=timedelta(seconds=1),
-            detail={'reason': 'rate limiting'}
+            detail={"reason": "rate limiting"},
         )
-        assert span.detail == {'reason': 'rate limiting'}
+        assert span.detail == {"reason": "rate limiting"}
 
     def test_span_with_none_detail(self):
-        """Span with None detail should succeed"""
-        span = TestSpan(
-            section='sql',
-            duration=timedelta(seconds=1),
-            detail=None
-        )
-        assert span.detail is None
+        """Span with None detail should raise TypeError for non-sleep sections"""
+        with pytest.raises(
+            TypeError,
+            match="detail is requred for 'sql', 'annotation' and 'http' spans",
+        ):
+            TestSpan(section="sql", duration=timedelta(seconds=1), detail=None)
 
     def test_span_with_string_detail_fails(self):
         """Span with string instead of dict should raise TypeError"""
         with pytest.raises(TypeError, match="detail must be a dict, got str"):
             TestSpan(
-                section='sql',
+                section="sql",
                 duration=timedelta(seconds=1),
-                detail='SELECT * FROM users'
+                detail="SELECT * FROM users",
             )

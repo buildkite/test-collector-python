@@ -61,7 +61,7 @@ class TestSpan:
         """Validate detail structure matches the section type requirements"""
         if self.section == "sleep":
             # Sleep spans don't need detail, so no validation is required
-            pass
+            return
 
         if self.detail is None:
             raise TypeError(

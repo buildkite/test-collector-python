@@ -57,8 +57,12 @@ class TestSpan:
 
     def __post_init__(self):
         """Validate detail structure matches the section type requirements"""
+        if self.section == 'sleep'
+            # Sleep spans don't need detail, so no validation is required
+            pass
+
         if self.detail is None:
-            return
+            raise TypeError(f"detail is requred for 'sql', 'annotation' and 'http' spans")
 
         if not isinstance(self.detail, dict):
             raise TypeError(f"detail must be a dict, got {type(self.detail).__name__}")

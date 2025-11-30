@@ -32,17 +32,28 @@ class SpanCollector:
 
     @contextmanager
     def measure(self, section: Literal['http', 'sql', 'sleep', 'annotation'],
-                detail: Optional[str] = None) -> Any:
+                detail: Optional[dict] = None) -> Any:
         """
         Measure the execution time of some code and record it as a span.
+
+        The detail parameter should be a dict matching the expected format for each section type:
+        - sql: {"query": str}
+        - annotation: {"content": str}
+        - http: {"method": str, "url": str, "lib": str}
+        - sleep: no detail required
 
         Example:
 
         .. code-block:: python
 
             def test_measure_http_request(spans):
-                with spans.measure('http', 'The koan of Github'):
+                detail = {'method': 'GET', 'url': 'https://api.github.com/zen', 'lib': 'requests'}
+                with spans.measure('http', detail):
                     requests.get("https://api.github.com/zen")
+
+            def test_measure_sql_query(spans):
+                with spans.measure('sql', {'query': 'SELECT * FROM users'}):
+                    db.execute('SELECT * FROM users')
         """
         start_at = Instant.now()
         try:

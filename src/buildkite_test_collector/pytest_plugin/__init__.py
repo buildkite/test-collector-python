@@ -49,18 +49,22 @@ def pytest_unconfigure(config):
 
         is_controller = not xdist_enabled or (xdist_enabled and not is_xdist_worker)
 
+        force_skip_api_submit = config.option.buildkite_force_skip_api_submit
+        allow_api_submit = not force_skip_api_submit
+        force_save_json = config.option.buildkite_force_save_json
+
         # When xdist is not installed, or when it's installed and not enabled
-        if not xdist_enabled:
+        if allow_api_submit and not xdist_enabled:
             list(api.submit(plugin.payload))
 
         # When xdist is activated, we want to submit from worker thread only, because they have
         # access to tag data
-        if xdist_enabled and is_xdist_worker:
+        if allow_api_submit and xdist_enabled and is_xdist_worker:
             list(api.submit(plugin.payload))
 
         # We only want a single thread to write to the json file.
         # When xdist is enabled, that will be the controller thread.
-        if is_controller:
+        if is_controller or force_save_json:
             # Note that when xdist is used, this JSON output file will NOT contain tags.
             jsonpath = config.option.jsonpath
             if jsonpath:
@@ -86,4 +90,18 @@ def pytest_addoption(parser):
         action='store_true',
         dest="mergejson",
         help='merge json output with existing file, if it exists'
+    )
+    group.addoption(
+        '--buildkite-force-save-json',
+        default=False,
+        action='store_true',
+        dest='buildkite_force_save_json',
+        help='always save json file',
+    )
+    group.addoption(
+        '--buildkite-force-skip-api-submit',
+        default=False,
+        action='store_true',
+        dest='buildkite_force_skip_api_submit',
+        help='never submit the payload to the api',
     )

@@ -41,9 +41,11 @@ def pytest_unconfigure(config):
 
     if plugin:
         api = API(os.environ)
+        numprocesses = config.getoption("numprocesses")
         xdist_enabled = (
             config.pluginmanager.getplugin("xdist") is not None
-            and config.getoption("numprocesses") is not None
+            and numprocesses is not None
+            and numprocesses > 0
         )
         is_xdist_worker = hasattr(config, 'workerinput')
 

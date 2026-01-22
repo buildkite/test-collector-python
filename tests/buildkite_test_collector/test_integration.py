@@ -19,7 +19,11 @@ def test_add_tag_to_execution_data(tmp_path, fake_env):
     ]
     
     # Run pytest in a subprocess
-    result = subprocess.run(cmd, capture_output=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print(result.stderr)
+        pytest.fail("pytest run failed, see output above")
 
     assert json_output_file.exists(), "JSON output file was not created"
 

@@ -89,3 +89,10 @@ def pytest_addoption(parser):
         dest="mergejson",
         help='merge json output with existing file, if it exists'
     )
+    group.addoption(
+        '--tag-filters',
+        default=None,
+        action='store',
+        dest="tag_filters",
+        help='filter tests by execution_tag with `key:value`, e.g. `--tag-filters color:red`'
+    )

@@ -41,7 +41,7 @@ def pytest_unconfigure(config):
 
     if plugin:
         api = API(os.environ)
-        numprocesses = config.getoption("numprocesses")
+        numprocesses = config.getoption("numprocesses", None)
         xdist_enabled = (
             config.pluginmanager.getplugin("xdist") is not None
             and numprocesses is not None
@@ -88,4 +88,11 @@ def pytest_addoption(parser):
         action='store_true',
         dest="mergejson",
         help='merge json output with existing file, if it exists'
+    )
+    group.addoption(
+        '--tag-filters',
+        default=None,
+        action='store',
+        dest="tag_filters",
+        help='filter tests by execution_tag with `key:value`, e.g. `--tag-filters color:red`'
     )

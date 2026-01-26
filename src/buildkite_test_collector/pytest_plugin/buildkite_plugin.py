@@ -17,6 +17,17 @@ class BuildkitePlugin:
         self.in_flight = {}
         self.spans = {}
 
+    def pytest_collection_modifyitems(self, config, items):
+        """pytest_collection_modifyitems hook callback to filter tests by execution_tag markers"""
+        tag_filter = config.getoption("tag_filters")
+        if not tag_filter:
+            return
+
+        filtered_items, unfiltered_items = self._filter_tests_by_tag(items, tag_filter)
+
+        config.hook.pytest_deselected(items=unfiltered_items)
+        items[:] = filtered_items
+
     def pytest_runtest_logstart(self, nodeid, location):
         """pytest_runtest_logstart hook callback"""
         logger.debug('hook=pytest_runtest_logstart nodeid=%s', nodeid)
@@ -144,3 +155,32 @@ class BuildkitePlugin:
 
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f)
+
+    def _filter_tests_by_tag(self, items, tag_filter):
+        """
+        Filters tests based on the tag_filter option.
+        Supports filtering by a single tag in the format key:value.
+        Only equality comparison is supported.
+        Returns a tuple of (filtered_items, unfiltered_items).
+        """
+        key, _, value = tag_filter.partition(":")
+
+        filtered_items = []
+        unfiltered_items = []
+        for item in items:
+            # Extract all execution_tag markers and store them in a dict
+            tags = {}
+            markers = item.iter_markers("execution_tag")
+            for tag_marker in markers:
+                # Ensure the marker has exactly two arguments: key and value
+                if len(tag_marker.args) != 2:
+                    continue
+
+                tags[tag_marker.args[0]] = tag_marker.args[1]
+
+            if tags.get(key) == value:
+                filtered_items.append(item)
+            else:
+                unfiltered_items.append(item)
+
+        return filtered_items, unfiltered_items

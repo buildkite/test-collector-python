@@ -44,6 +44,36 @@ uv run pytest
 
 If all is well, you should see the test run in the Test Engine section of the Buildkite dashboard.
 
+## 🏷️ Filtering Tests by Tags
+
+You can filter which tests to run based on execution tags using the `--tag-filters` option.
+
+First, mark your tests with execution tags:
+
+```python
+import pytest
+
+@pytest.mark.execution_tag("color", "red")
+def test_red_feature():
+    assert True
+
+@pytest.mark.execution_tag("color", "blue")
+def test_blue_feature():
+    assert True
+```
+
+Then filter tests by tag using the `--tag-filters` option with `key:value` format:
+
+```sh
+# Run only tests tagged with color:red
+pytest --tag-filters "color:red"
+
+# Run only tests tagged with color:blue
+pytest --tag-filters "color:blue"
+```
+
+**Note:** The `--tag-filters` option performs exact key:value matching. Only tests with the specified tag will be selected.
+
 ## 🎢 Tracing
 
 Buildkite Test Engine has support for tracing potentially slow operations within your tests, and can collect span data of [four types](https://buildkite.com/docs/test-engine/importing-json#json-test-results-data-reference-span-objects): http, sql, sleep and annotations. This is documented as part of our public JSON API so anyone can instrument any code to send this data.

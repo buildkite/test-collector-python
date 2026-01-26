@@ -145,6 +145,39 @@ def test_pytest_runtest_logreport_fail_exception_in_setup(fake_env):
     assert len(fe["backtrace"]) > 0
 
 
+def test_pytest_runtest_logreport_fail_exception_in_teardown(fake_env):
+    """Teardown failure should override a passed call result"""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    location = ("", None, "")
+
+    # First, simulate a passing call phase
+    call_report = TestReport(nodeid="", location=location, keywords={}, outcome="passed", longrepr=None, when="call")
+    plugin.pytest_runtest_logstart(call_report.nodeid, location)
+    plugin.pytest_runtest_logreport(call_report)
+
+    # Verify it's marked as passed after call
+    test_data = plugin.in_flight.get(call_report.nodeid)
+    assert isinstance(test_data.result, TestResultPassed)
+
+    # Now simulate a failing teardown phase
+    try:
+        raise Exception("a fake teardown exception")
+    except Exception as e:
+        longrepr = ExceptionInfo.from_exception(e)
+    teardown_report = TestReport(nodeid="", location=location, keywords={}, outcome="failed", longrepr=longrepr, when="teardown")
+
+    plugin.pytest_runtest_logreport(teardown_report)
+    test_data = plugin.in_flight.get(teardown_report.nodeid)
+    plugin.pytest_runtest_logfinish(teardown_report.nodeid, location)
+
+    # Verify teardown failure overrides the passed result
+    assert isinstance(test_data, TestData)
+    assert isinstance(test_data.result, TestResultFailed)
+    assert test_data.result.failure_reason == "Exception: a fake teardown exception"
+
+
 def test_pytest_runtest_logreport_simple_skip(fake_env):
     payload = Payload.init(fake_env)
     plugin = BuildkitePlugin(payload)

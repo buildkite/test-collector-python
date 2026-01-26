@@ -41,9 +41,13 @@ def pytest_unconfigure(config):
 
     if plugin:
         api = API(os.environ)
-        numprocesses = config.getoption("numprocesses", None)
+        xdist_plugin = config.pluginmanager.getplugin("xdist")
+        if xdist_plugin is not None:
+            numprocesses = config.getoption("numprocesses")
+        else:
+            numprocesses = None
         xdist_enabled = (
-            config.pluginmanager.getplugin("xdist") is not None
+            xdist_plugin is not None
             and numprocesses is not None
             and numprocesses > 0
         )

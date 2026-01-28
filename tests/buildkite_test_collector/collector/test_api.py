@@ -11,29 +11,20 @@ from buildkite_test_collector.collector.api import API
 from buildkite_test_collector.collector.payload import Payload
 from requests.exceptions import ReadTimeout, ConnectTimeout
 
-def test_submit_local_returns_none(capfd):
-    env = {"CI": None}
-    payload = Payload.init(RunEnvBuilder(env).build())
-
-    api = API(env)
-    assert next(api.submit(payload)) is None
-    captured = capfd.readouterr()
-
-    assert not captured.err.startswith("buildkite-test-collector - WARNING -")
-
 def test_submit_with_missing_api_key_environment_variable_returns_none(capfd):
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": None}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": None}
     payload = Payload.init(RunEnvBuilder(env).build())
 
     api = API(env)
     assert next(api.submit(payload)) is None
     captured = capfd.readouterr()
 
-    assert captured.err.startswith("buildkite-test-collector - WARNING -")
-
+    assert captured.err.startswith(
+        "buildkite-test-collector - WARNING - No BUILDKITE_ANALYTICS_TOKEN"
+    )
 
 def test_submit_with_invalid_api_key_environment_variable_returns_none(capfd):
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": "\n"}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": "\n"}
     payload = Payload.init(RunEnvBuilder(env).build())
 
     api = API(env)
@@ -50,7 +41,7 @@ def test_submit_with_payload_timeout_captures_ConnectTimeout_error(capfd, succes
         "https://analytics-api.buildkite.com/v1/uploads",
         body=ConnectTimeout("Error"))
 
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
     payload = Payload.init(RunEnvBuilder(env).build())
     payload = Payload.started(payload)
 
@@ -71,7 +62,7 @@ def test_submit_with_payload_timeout_captures_ReadTimeout_error(capfd, successfu
         "https://analytics-api.buildkite.com/v1/uploads",
         body=ReadTimeout("Error"))
 
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
     payload = Payload.init(RunEnvBuilder(env).build())
     payload = Payload.started(payload)
 
@@ -97,7 +88,7 @@ def test_submit_with_payload_returns_an_api_response(successful_test):
               'run_url': 'https://buildkite.com/organizations/alembic/analytics/suites/test/runs/52c5d9f6-a4f2-4a2d-a1e6-993335789c92'},
         status=202)
 
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
     payload = Payload.init(RunEnvBuilder(env).build())
     payload = Payload.started(payload)
 
@@ -122,7 +113,7 @@ def test_submit_with_bad_response(successful_test):
         json={'error': str(uuid4())},
         status=401)
 
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
     payload = Payload.init(RunEnvBuilder(env).build())
     payload = Payload.started(payload)
 
@@ -156,7 +147,7 @@ def test_submit_with_large_payload_batches_requests(successful_test, failed_test
               'run_url': 'https://buildkite.com/organizations/alembic/analytics/suites/test/runs/52c5d9f6-a4f2-4a2d-a1e6-993335789c92'},
         status=202)
 
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
     payload = Payload.init(RunEnvBuilder(env).build())
     payload = Payload.started(payload)
 
@@ -193,7 +184,7 @@ def test_submit_with_batches_and_errors(capfd, successful_test, failed_test):
               'run_url': 'https://buildkite.com/organizations/alembic/analytics/suites/test/runs/52c5d9f6-a4f2-4a2d-a1e6-993335789c92'},
         status=202)
 
-    env = {"CI": "true", "BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
+    env = {"BUILDKITE_ANALYTICS_TOKEN": str(uuid4())}
     payload = Payload.init(RunEnvBuilder(env).build())
     payload = Payload.started(payload)
 

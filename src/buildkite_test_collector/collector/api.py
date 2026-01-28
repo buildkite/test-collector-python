@@ -29,9 +29,6 @@ class API:
         """Submit a payload to the API"""
         response = None
 
-        if not self.ci:
-            yield None
-
         if not self.token:
             logger.warning("No %s environment variable present", self.ENV_TOKEN)
             yield None

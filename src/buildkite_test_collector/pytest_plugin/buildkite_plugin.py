@@ -9,6 +9,22 @@ from ..collector.payload import TestData
 from .logger import logger
 from .failure_reasons import failure_reasons
 
+
+def _is_subtest_report(report):
+    """Detect SubtestReport from pytest>=9.0 built-in subtests.
+
+    SubtestReport is a TestReport subclass with a ``context`` attribute
+    containing ``msg`` and ``kwargs``.  We use duck-typing so the check
+    works without importing any specific class, keeping backwards
+    compatibility with older pytest versions that lack subtests support.
+    """
+    return (
+        hasattr(report, "context")
+        and hasattr(report.context, "msg")
+        and hasattr(report.context, "kwargs")
+    )
+
+
 class BuildkitePlugin:
     """Buildkite test collector plugin for Pytest"""
 
@@ -16,6 +32,10 @@ class BuildkitePlugin:
         self.payload = payload
         self.in_flight = {}
         self.spans = {}
+        # Tracks nodeids whose in-flight result was set to failed by a
+        # SubtestReport.  Used to prevent the parent test's "passed"
+        # call-phase report from overwriting the failure.
+        self._failed_by_subtest = set()
 
     def pytest_collection_modifyitems(self, config, items):
         """pytest_collection_modifyitems hook callback to filter tests by execution_tag markers"""
@@ -53,6 +73,39 @@ class BuildkitePlugin:
         """pytest_runtest_logreport hook callback to get test outcome after test call"""
         logger.debug('hook=pytest_runtest_logreport nodeid=%s when=%s', report.nodeid, report.when)
 
+        # Handle SubtestReport objects (pytest>=9.0 built-in subtests).
+        #
+        # SubtestReport shares the parent test's nodeid, so without
+        # special handling each subtest's result overwrites the previous
+        # one in self.in_flight — a last-write-wins race.  Worse, the
+        # parent test's own call-phase report arrives with outcome="passed"
+        # (exceptions inside subtests are swallowed by the context manager)
+        # and would overwrite any subtest failure.
+        #
+        # Strategy: propagate subtest *failures* to the parent's in-flight
+        # entry.  Ignore passing/skipped subtests (they must not overwrite
+        # a previous failure).  Guard against the parent's "passed" report
+        # overwriting a subtest-induced failure.
+        if _is_subtest_report(report) and report.when == "call":
+            if report.failed:
+                test_data = self.in_flight.get(report.nodeid)
+                if test_data:
+                    failure_reason, failure_expanded = failure_reasons(
+                        longrepr=report.longrepr
+                    )
+                    logger.debug(
+                        "-> subtest failed, propagating to parent: %s",
+                        failure_reason,
+                    )
+                    self.in_flight[report.nodeid] = test_data.failed(
+                        failure_reason=failure_reason,
+                        failure_expanded=failure_expanded,
+                    )
+                    self._failed_by_subtest.add(report.nodeid)
+            else:
+                logger.debug("-> subtest passed/skipped, ignoring")
+            return
+
         # This hook is called three times during the lifecycle of a test:
         # after the setup phase, the call phase, and the teardown phase.
         # We capture outcomes from the call phase, or setup/teardown phase if it failed
@@ -61,6 +114,19 @@ class BuildkitePlugin:
         # See: https://github.com/buildkite/test-collector-python/pull/45
         # See: https://github.com/buildkite/test-collector-python/issues/84
         if report.when == 'call' or (report.when in ('setup', 'teardown') and report.failed):
+            # Guard: do not let the parent test's "passed" call-phase
+            # report overwrite a failure that was set by a SubtestReport.
+            if (
+                report.when == "call"
+                and report.passed
+                and report.nodeid in self._failed_by_subtest
+            ):
+                logger.debug(
+                    "-> parent call report is 'passed' but subtest(s) failed; "
+                    "preserving subtest failure"
+                )
+                return
+
             self.update_test_result(report)
 
     # This hook only runs in xdist worker thread, not controller thread.
@@ -140,6 +206,10 @@ class BuildkitePlugin:
         test_data = test_data.finish()
         logger.debug('-> finalize_test nodeid=%s duration=%s', nodeid, test_data.history.duration)
         self.payload = self.payload.push_test_data(test_data)
+
+        # Clean up subtest tracking state for this test.
+        self._failed_by_subtest.discard(nodeid)
+
         return True
 
     def save_payload_as_json(self, path, merge=False):

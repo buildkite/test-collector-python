@@ -224,9 +224,11 @@ class BuildkitePlugin:
                         existing_data = json.load(f)
                     # Merge existing data with current payload
                     data = existing_data + data
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f)
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(data, f)
+        else:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
 
     def _filter_tests_by_tag(self, items, tag_filter):
         """

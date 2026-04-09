@@ -294,3 +294,38 @@ def test_save_json_payload_with_large_data(fake_env, tmp_path, successful_test):
     # Check if the data was merged correctly
     expected_data = existing_data + [successful_test.as_json(payload.started_at)]
     assert json.loads(path.read_text()) == expected_data
+
+
+def test_save_json_payload_concurrent_merge(fake_env, tmp_path, successful_test):
+    """Test that concurrent merge writes produce valid JSON with all entries.
+
+    This exercises the race condition where multiple processes call
+    save_payload_as_json(merge=True) on the same file simultaneously —
+    e.g. when pants runs multiple pytest processes in parallel and each
+    merges results into a shared JSON file.
+    """
+    import concurrent.futures
+
+    num_writers = 10
+    path = tmp_path / "concurrent.json"
+    plugins = []
+
+    for i in range(num_writers):
+        payload = Payload.init(fake_env)
+        payload = Payload.started(payload)
+        payload = payload.push_test_data(successful_test)
+        plugins.append(BuildkitePlugin(payload))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_writers) as executor:
+        futures = [
+            executor.submit(plugin.save_payload_as_json, str(path), True)
+            for plugin in plugins
+        ]
+        for f in futures:
+            f.result()
+
+    # The file must be valid JSON
+    result = json.loads(path.read_text())
+
+    # All writers must have merged their entry
+    assert len(result) == num_writers

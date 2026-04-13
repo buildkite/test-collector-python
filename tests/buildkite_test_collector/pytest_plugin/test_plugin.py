@@ -196,6 +196,23 @@ def test_pytest_runtest_logreport_simple_skip(fake_env):
     # TODO: track skip reason as failure_reason via longrepr
 
 
+def test_pytest_runtest_logreport_skip_in_setup(fake_env):
+    """Tests skipped during setup (e.g. @pytest.mark.skip) should be recorded as skipped"""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    location = ("path/to/test.py", 100, "")
+    longrepr = ("path/to/test.py", 100, "Skipped: unconditional skip")
+    report = TestReport(nodeid="", location=location, keywords={}, outcome="skipped", longrepr=longrepr, when="setup")
+
+    plugin.pytest_runtest_logstart(report.nodeid, location)
+    plugin.pytest_runtest_logreport(report)
+
+    test_data = plugin.in_flight.get(report.nodeid)
+    assert isinstance(test_data, TestData)
+    assert isinstance(test_data.result, TestResultSkipped)
+
+
 def test_save_json_payload_without_merge(fake_env, tmp_path, successful_test):
     payload = Payload.init(fake_env)
     payload = Payload.started(payload)

@@ -188,16 +188,14 @@ class BuildkitePlugin:
             if report.passed:
                 logger.debug('-> test passed')
                 test_data = test_data.passed()
-
-            if report.failed:
+            elif report.failed:
                 failure_reason, failure_expanded = failure_reasons(longrepr=report.longrepr)
                 logger.debug('-> test failed: %s', failure_reason)
                 test_data = test_data.failed(
                     failure_reason=failure_reason,
                     failure_expanded=failure_expanded
                 )
-
-            if report.skipped:
+            elif report.skipped:
                 logger.debug('-> test skipped')
                 test_data = test_data.skipped()
 
@@ -215,6 +213,8 @@ class BuildkitePlugin:
             logger.debug('-> finalize_test: not in flight: %s', nodeid)
             return False
         del self.in_flight[nodeid]
+        if test_data.result is None:
+            logger.warning('Test %s has no result set at finalization', nodeid)
         test_data = test_data.finish()
         logger.debug('-> finalize_test nodeid=%s duration=%s', nodeid, test_data.history.duration)
         self.payload = self.payload.push_test_data(test_data)

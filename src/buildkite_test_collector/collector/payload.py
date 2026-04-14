@@ -235,16 +235,17 @@ class TestData:
 
         if isinstance(self.result, TestResultPassed):
             attrs["result"] = "passed"
-
-        if isinstance(self.result, TestResultFailed):
+        elif isinstance(self.result, TestResultFailed):
             attrs["result"] = "failed"
             if self.result.failure_reason is not None:
                 attrs["failure_reason"] = self.result.failure_reason
             if self.result.failure_expanded is not None:
                 attrs["failure_expanded"] = self.result.failure_expanded
-
-        if isinstance(self.result, TestResultSkipped):
+        elif isinstance(self.result, TestResultSkipped):
             attrs["result"] = "skipped"
+        else:
+            logger.warning("Test %s has no result set, defaulting to unknown", self.name)
+            attrs["result"] = "unknown"
 
         return attrs
 

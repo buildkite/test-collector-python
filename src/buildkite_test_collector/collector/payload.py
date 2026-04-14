@@ -244,8 +244,7 @@ class TestData:
         elif isinstance(self.result, TestResultSkipped):
             attrs["result"] = "skipped"
         else:
-            logger.warning("Test %s has no result set, defaulting to unknown", self.name)
-            attrs["result"] = "unknown"
+            logger.warning("Test %s has no result set, omitting result key", self.name)
 
         return attrs
 

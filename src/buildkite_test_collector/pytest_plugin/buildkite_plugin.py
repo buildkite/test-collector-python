@@ -106,14 +106,26 @@ class BuildkitePlugin:
                 logger.debug("-> subtest passed/skipped, ignoring")
             return
 
-        # This hook is called three times during the lifecycle of a test:
-        # after the setup phase, the call phase, and the teardown phase.
-        # We capture outcomes from the call phase, or setup/teardown phase if it failed
-        # (since setup failures prevent the call phase from running, and teardown
-        # failures should mark an otherwise passing test as failed).
+        # This hook fires three times per test: setup, call, teardown.
+        # We only capture the result when it carries meaningful information:
+        #
+        #   call:     always — this is the actual test result.
+        #   setup:    only on failure or skip — the call phase won't run,
+        #             so this is the only outcome we'll get.
+        #   teardown: only on failure — overrides the call result because
+        #             broken cleanup should fail the test.
+        #
+        # We intentionally skip setup-passed and teardown-passed/skipped
+        # because they would overwrite the real test outcome.
+        #
         # See: https://github.com/buildkite/test-collector-python/pull/45
         # See: https://github.com/buildkite/test-collector-python/issues/84
-        if report.when == 'call' or (report.when in ('setup', 'teardown') and report.failed):
+        should_capture = (
+            report.when == 'call'
+            or (report.when == 'setup' and not report.passed)
+            or (report.when == 'teardown' and report.failed)
+        )
+        if should_capture:
             # Guard: do not let the parent test's "passed" call-phase
             # report overwrite a failure that was set by a SubtestReport.
             if (

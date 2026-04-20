@@ -61,7 +61,10 @@ class BuildkitePlugin:
         if not report.nodeid:
             return
 
-        logger.debug('hook=pytest_collectreport nodeid=%s outcome=%s', report.nodeid, report.outcome)
+        logger.debug(
+            'hook=pytest_collectreport nodeid=%s outcome=%s',
+            report.nodeid, report.outcome
+        )
 
         if not self.payload.is_started():
             self.payload = self.payload.started()

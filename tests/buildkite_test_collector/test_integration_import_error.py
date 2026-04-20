@@ -61,7 +61,8 @@ class TestImportErrorReporting:
 
         entry = data[0]
         assert entry["result"] == "failed"
-        assert "ImportError" in (entry.get("failure_reason") or "")
+        assert entry.get("failure_reason") is not None, "failure_reason should be present"
+        assert "ImportError" in entry["failure_reason"]
 
     def test_import_error_reported_alongside_passing_tests(self, tmp_path):
         """With --continue-on-collection-errors, both passing tests and the
@@ -77,6 +78,7 @@ class TestImportErrorReporting:
         data = json.loads(json_output.read_text())
         names = [t["name"] for t in data]
 
+        # 5 tests from test_sample_skip.py + 1 collection error from test_sample_import_error.py
         assert len(data) == 6, (
             f"Expected 6 entries (5 passing + 1 collection error), got {len(data)}: {names}"
         )
@@ -85,4 +87,5 @@ class TestImportErrorReporting:
 
         failed = [t for t in data if t["result"] == "failed"]
         assert len(failed) == 1
-        assert "ImportError" in (failed[0].get("failure_reason") or "")
+        assert failed[0].get("failure_reason") is not None, "failure_reason should be present"
+        assert "ImportError" in failed[0]["failure_reason"]

@@ -36,6 +36,7 @@ class BuildkitePlugin:
         # SubtestReport.  Used to prevent the parent test's "passed"
         # call-phase report from overwriting the failure.
         self._failed_by_subtest = set()
+        self._collection_errors_seen = set()
 
     def pytest_collection_modifyitems(self, config, items):
         """pytest_collection_modifyitems hook callback to filter tests by execution_tag markers"""
@@ -60,6 +61,10 @@ class BuildkitePlugin:
 
         if not report.nodeid:
             return
+
+        if report.nodeid in self._collection_errors_seen:
+            return
+        self._collection_errors_seen.add(report.nodeid)
 
         logger.debug(
             'hook=pytest_collectreport nodeid=%s outcome=%s',

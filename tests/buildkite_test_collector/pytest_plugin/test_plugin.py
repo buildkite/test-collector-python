@@ -453,3 +453,27 @@ def test_pytest_collectreport_tuple_longrepr(fake_env):
     test_data = plugin.payload.data[0]
     assert isinstance(test_data.result, TestResultFailed)
     assert "ModuleNotFoundError" in test_data.result.failure_reason
+
+
+def test_pytest_collectreport_deduplicates(fake_env):
+    """Repeated collection errors for the same nodeid produce only one entry.
+
+    With xdist, each worker fires pytest_collectreport independently for the
+    same file.  Without dedup, the same error would appear N times in the
+    payload (once per worker).
+    """
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    report = CollectReport(
+        nodeid="tests/foo.py",
+        outcome="failed",
+        longrepr="ModuleNotFoundError: No module named 'bar'",
+        result=None,
+    )
+
+    plugin.pytest_collectreport(report)
+    plugin.pytest_collectreport(report)
+    plugin.pytest_collectreport(report)
+
+    assert len(plugin.payload.data) == 1

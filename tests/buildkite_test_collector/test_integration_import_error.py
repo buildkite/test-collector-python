@@ -63,6 +63,7 @@ class TestImportErrorReporting:
         assert entry["result"] == "failed"
         assert entry.get("failure_reason") is not None, "failure_reason should be present"
         assert "ImportError" in entry["failure_reason"]
+        assert entry.get("tags", {}).get("test.collection_error") == "true"
 
     def test_import_error_reported_alongside_passing_tests(self, tmp_path):
         """With --continue-on-collection-errors, both passing tests and the

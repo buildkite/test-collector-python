@@ -376,6 +376,7 @@ def test_pytest_collectreport_import_error(fake_env):
     assert test_data.scope == ""
     assert isinstance(test_data.result, TestResultFailed)
     assert "ModuleNotFoundError" in test_data.result.failure_reason
+    assert test_data.tags == {"test.collection_error": "true"}
     assert test_data.is_finished()
 
 

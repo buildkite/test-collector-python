@@ -94,6 +94,9 @@ class BuildkitePlugin:
             failure_reason=failure_reason,
             failure_expanded=failure_expanded,
         )
+        test_data = test_data.tag_execution(
+            "test.collection_error", "true"
+        )
         test_data = test_data.finish()
 
         self.payload = self.payload.push_test_data(test_data)

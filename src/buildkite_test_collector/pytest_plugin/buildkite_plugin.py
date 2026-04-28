@@ -36,6 +36,7 @@ class BuildkitePlugin:
         # SubtestReport.  Used to prevent the parent test's "passed"
         # call-phase report from overwriting the failure.
         self._failed_by_subtest = set()
+        self._collection_errors_seen = set()
 
     def pytest_collection_modifyitems(self, config, items):
         """pytest_collection_modifyitems hook callback to filter tests by execution_tag markers"""
@@ -47,6 +48,58 @@ class BuildkitePlugin:
 
         config.hook.pytest_deselected(items=unfiltered_items)
         items[:] = filtered_items
+
+    def pytest_collectreport(self, report):
+        """Capture collection errors (e.g. import failures) as failed tests.
+
+        When a test file fails to import, pytest fires this hook instead of
+        the pytest_runtest_* hooks.  Without handling it, collection errors
+        are silently dropped from the JSON report.
+        """
+        if not report.failed:
+            return
+
+        if not report.nodeid:
+            return
+
+        if report.nodeid in self._collection_errors_seen:
+            return
+        self._collection_errors_seen.add(report.nodeid)
+
+        logger.debug(
+            'hook=pytest_collectreport nodeid=%s outcome=%s',
+            report.nodeid, report.outcome
+        )
+
+        if not self.payload.is_started():
+            self.payload = self.payload.started()
+
+        chunks = report.nodeid.split("::")
+        scope = "::".join(chunks[:-1])
+        name = chunks[-1]
+        file_name = chunks[0]
+
+        test_data = TestData.start(
+            uuid4(),
+            scope=scope,
+            name=name,
+            file_name=file_name,
+            location=file_name,
+        )
+
+        failure_reason, failure_expanded = failure_reasons(longrepr=report.longrepr)
+        logger.debug('-> collection error: %s', failure_reason)
+
+        test_data = test_data.failed(
+            failure_reason=failure_reason,
+            failure_expanded=failure_expanded,
+        )
+        test_data = test_data.tag_execution(
+            "test.pytest_collection_error", "true"
+        )
+        test_data = test_data.finish()
+
+        self.payload = self.payload.push_test_data(test_data)
 
     def pytest_runtest_logstart(self, nodeid, location):
         """pytest_runtest_logstart hook callback"""

@@ -5,7 +5,7 @@ from buildkite_test_collector.collector.payload import Payload, TestData, TestRe
 from buildkite_test_collector.pytest_plugin import BuildkitePlugin
 
 from _pytest._code.code import ExceptionInfo
-from _pytest.reports import TestReport
+from _pytest.reports import CollectReport, TestReport
 
 def test_runtest_logstart_with_unstarted_payload(fake_env):
     payload = Payload.init(fake_env)
@@ -346,3 +346,135 @@ def test_save_json_payload_concurrent_merge(fake_env, tmp_path, successful_test)
 
     # All writers must have merged their entry
     assert len(result) == num_writers
+
+
+# ---------------------------------------------------------------------------
+# pytest_collectreport tests
+# ---------------------------------------------------------------------------
+
+def test_pytest_collectreport_import_error(fake_env):
+    """Collection errors are captured as failed tests."""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    report = CollectReport(
+        nodeid="tests/foo.py",
+        outcome="failed",
+        longrepr="ModuleNotFoundError: No module named 'bar'",
+        result=None,
+    )
+
+    plugin.pytest_collectreport(report)
+
+    assert plugin.payload.is_started()
+    assert len(plugin.in_flight) == 0
+    assert len(plugin.payload.data) == 1
+
+    test_data = plugin.payload.data[0]
+    assert test_data.name == "tests/foo.py"
+    assert test_data.file_name == "tests/foo.py"
+    assert test_data.scope == ""
+    assert isinstance(test_data.result, TestResultFailed)
+    assert "ModuleNotFoundError" in test_data.result.failure_reason
+    assert test_data.tags == {"test.pytest_collection_error": "true"}
+    assert test_data.is_finished()
+
+
+def test_pytest_collectreport_passed_ignored(fake_env):
+    """Successful collection reports are ignored."""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    report = CollectReport(
+        nodeid="tests/foo.py",
+        outcome="passed",
+        longrepr=None,
+        result=[],
+    )
+
+    plugin.pytest_collectreport(report)
+
+    assert not plugin.payload.is_started()
+    assert len(plugin.payload.data) == 0
+
+
+def test_pytest_collectreport_empty_nodeid_ignored(fake_env):
+    """The root session collect report (empty nodeid) is ignored."""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    report = CollectReport(
+        nodeid="",
+        outcome="failed",
+        longrepr="some error",
+        result=None,
+    )
+
+    plugin.pytest_collectreport(report)
+
+    assert len(plugin.payload.data) == 0
+
+
+def test_pytest_collectreport_does_not_restart_payload(fake_env):
+    """If the payload is already started, pytest_collectreport does not restart it."""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    plugin.payload = plugin.payload.started()
+    original_started_at = plugin.payload.started_at
+
+    report = CollectReport(
+        nodeid="tests/foo.py",
+        outcome="failed",
+        longrepr="ModuleNotFoundError: No module named 'bar'",
+        result=None,
+    )
+
+    plugin.pytest_collectreport(report)
+
+    assert plugin.payload.started_at == original_started_at
+    assert len(plugin.payload.data) == 1
+
+
+def test_pytest_collectreport_tuple_longrepr(fake_env):
+    """Tuple longrepr (path, lineno, message) is handled correctly."""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    report = CollectReport(
+        nodeid="tests/foo.py",
+        outcome="failed",
+        longrepr=("tests/foo.py", 8, "ModuleNotFoundError: No module named 'bar'"),
+        result=None,
+    )
+
+    plugin.pytest_collectreport(report)
+
+    assert len(plugin.payload.data) == 1
+    test_data = plugin.payload.data[0]
+    assert isinstance(test_data.result, TestResultFailed)
+    assert "ModuleNotFoundError" in test_data.result.failure_reason
+
+
+def test_pytest_collectreport_deduplicates(fake_env):
+    """Repeated collection errors for the same nodeid produce only one entry.
+
+    With xdist, each worker fires pytest_collectreport independently for the
+    same file.  Without dedup, the same error would appear N times in the
+    payload (once per worker).
+    """
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    report = CollectReport(
+        nodeid="tests/foo.py",
+        outcome="failed",
+        longrepr="ModuleNotFoundError: No module named 'bar'",
+        result=None,
+    )
+
+    plugin.pytest_collectreport(report)
+    plugin.pytest_collectreport(report)
+    plugin.pytest_collectreport(report)
+
+    assert len(plugin.payload.data) == 1

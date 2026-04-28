@@ -95,7 +95,7 @@ class BuildkitePlugin:
             failure_expanded=failure_expanded,
         )
         test_data = test_data.tag_execution(
-            "test.collection_error", "true"
+            "test.pytest_collection_error", "true"
         )
         test_data = test_data.finish()
 

@@ -7,7 +7,7 @@ name = "buildkite-test-collector"
 version = "1.4.3"
 description = "Buildkite Test Engine collector"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9.1"
 license = "MIT"
 authors = [{ name = "Buildkite", email = "support@buildkite.com" }]
 classifiers = ["License :: OSI Approved :: MIT License", "Framework :: Pytest"]

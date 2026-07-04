@@ -1,0 +1,31 @@
+agents:
+  queue: hosted
+
+steps:
+  - label: ":pytest: pytest {{matrix}}"
+    command: ".buildkite/steps/test"
+    env:
+      PYTHON_VERSION: "{{matrix}}"
+    matrix:
+      - "3.9"
+      - "3.10"
+      - "3.11"
+      - "3.12"
+      - "3.13"
+
+  - label: ":pytest: pytest 3.13 / pytest>=9"
+    command: ".buildkite/steps/test"
+    env:
+      PYTHON_VERSION: "3.13"
+      UV_RUN_FLAGS: "--with pytest>=9"
+
+  - label: ":python: pylint {{matrix}}"
+    command: ".buildkite/steps/lint"
+    env:
+      PYTHON_VERSION: "{{matrix}}"
+    matrix:
+      - "3.9"
+      - "3.10"
+      - "3.11"
+      - "3.12"
+      - "3.13"

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__root="$(cd "$(dirname "${__dir}")"/../ && pwd)"
+
+cd "$__root"
+
+# Dogfood the collector: upload this repo's own test results to Test Engine.
+# Uses an ephemeral OIDC token instead of a long-lived suite token, so this
+# pipeline carries no secrets.
+# https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc
+SUITE_URL="https://buildkite.com/organizations/buildkite/analytics/suites/test-collector-python"
+BUILDKITE_ANALYTICS_TOKEN="$(buildkite-agent oidc request-token --audience "$SUITE_URL" --lifetime 900)"
+export BUILDKITE_ANALYTICS_TOKEN
+
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source "$HOME/.local/bin/env"
+
+# Install dependencies
+uv python install "$PYTHON_VERSION"
+uv sync --all-extras
+
+# Run tests (UV_RUN_FLAGS is intentionally word-split, e.g. "--with pytest>=9")
+# shellcheck disable=SC2086
+uv run ${UV_RUN_FLAGS:-} pytest

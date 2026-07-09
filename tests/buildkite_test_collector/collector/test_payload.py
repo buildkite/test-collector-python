@@ -62,6 +62,7 @@ def test_payload_as_json(payload, successful_test):
 
     assert json["format"] == "json"
     assert json["run_env"]["key"] == payload.run_env.key
+    assert json["run_env"]["test_runner"] == "pytest"
     assert json["data"][0]["id"] == str(successful_test.id)
 
 

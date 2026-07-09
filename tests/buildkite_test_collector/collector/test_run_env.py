@@ -105,3 +105,4 @@ def test_env_as_json(fake_env):
     assert json["version"] == VERSION
     expected_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     assert json["language_version"] == expected_version
+    assert json["test_runner"] == "pytest"

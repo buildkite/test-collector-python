@@ -4,6 +4,7 @@
 
 DISTRIBUTION_NAME = 'buildkite-test-collector'
 COLLECTOR_NAME = f"python-{DISTRIBUTION_NAME}"
+TEST_RUNNER = "pytest"
 
 try:
     from importlib.metadata import version, PackageNotFoundError

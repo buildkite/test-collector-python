@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Mapping
 from uuid import uuid4
 
-from .constants import COLLECTOR_NAME, VERSION
+from .constants import COLLECTOR_NAME, VERSION, TEST_RUNNER
 
 # pylint: disable=too-few-public-methods
 class RunEnvBuilder:
@@ -141,6 +141,7 @@ class RunEnv:
             "message": self.message,
             "url": self.url,
             "collector": COLLECTOR_NAME,
+            "test_runner": TEST_RUNNER,
             "version": VERSION,
             "language_version": f"{platform.python_version()}"
         }

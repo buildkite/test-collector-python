@@ -1,6 +1,7 @@
 """Buildkite test collector plugin for Pytest"""
 import json
 import os
+from pathlib import Path
 from uuid import uuid4
 
 from filelock import FileLock
@@ -28,8 +29,9 @@ def _is_subtest_report(report):
 class BuildkitePlugin:
     """Buildkite test collector plugin for Pytest"""
 
-    def __init__(self, payload):
+    def __init__(self, payload, rootpath=None):
         self.payload = payload
+        self.rootpath = rootpath
         self.in_flight = {}
         self.spans = {}
         # Tracks nodeids whose in-flight result was set to failed by a
@@ -77,7 +79,7 @@ class BuildkitePlugin:
         chunks = report.nodeid.split("::")
         scope = "::".join(chunks[:-1])
         name = chunks[-1]
-        file_name = chunks[0]
+        file_name = self._normalize_file_path(chunks[0])
 
         test_data = TestData.start(
             uuid4(),
@@ -112,15 +114,29 @@ class BuildkitePlugin:
             logger.debug('-> started_at=%s(monotonic)', self.payload.started_at)
 
         chunks = nodeid.split("::")
+        file_name = self._normalize_file_path(location[0])
 
         test_data = TestData.start(
             uuid4(),
             scope="::".join(chunks[:-1]),
             name=chunks[-1],
-            file_name=location[0],
-            location=f"{location[0]}:{location[1]}"
+            file_name=file_name,
+            location=f"{file_name}:{location[1]}"
         )
         self.in_flight[nodeid] = test_data
+
+    def _normalize_file_path(self, path):
+        """Normalize a pytest-reported file path (relative to config.rootpath)
+        to be relative to the process's own cwd instead, mirroring what the
+        JS collectors (jest, cypress, playwright) already do. This lets
+        ta-ingestion safely rebase `file_name` when inferring
+        `test.selector.primary`, even when pytest's rootpath and the actual
+        invocation directory differ (e.g. in a monorepo).
+        """
+        if self.rootpath is None:
+            return path
+
+        return os.path.relpath(Path(self.rootpath) / path, os.getcwd())
 
     def pytest_runtest_logreport(self, report):
         """pytest_runtest_logreport hook callback to get test outcome after test call"""

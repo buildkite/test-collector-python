@@ -456,6 +456,93 @@ def test_pytest_collectreport_tuple_longrepr(fake_env):
     assert "ModuleNotFoundError" in test_data.result.failure_reason
 
 
+# ---------------------------------------------------------------------------
+# file path normalization (rootpath -> cwd)
+# ---------------------------------------------------------------------------
+
+def test_runtest_logstart_normalizes_path_in_monorepo(fake_env, tmp_path, monkeypatch):
+    """When bktec's cwd is a subdirectory of pytest's rootpath (e.g. a
+    monorepo), the uploaded file_name should be relative to that cwd, not
+    to pytest's rootpath, matching what Test Engine Client would discover
+    from the same cwd.
+    """
+    rootpath = tmp_path / "monorepo"
+    service_dir = rootpath / "services" / "foo"
+    service_dir.mkdir(parents=True)
+
+    monkeypatch.chdir(service_dir)
+
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload, rootpath=rootpath)
+
+    # location[0] as reported by pytest is relative to rootpath
+    location = ("services/foo/test_bar.py", 10, "")
+    nodeid = "services/foo/test_bar.py::test_it"
+
+    plugin.pytest_runtest_logstart(nodeid, location)
+
+    test_data = plugin.in_flight.get(nodeid)
+    assert test_data.file_name == "test_bar.py"
+    assert test_data.location == "test_bar.py:10"
+
+
+def test_runtest_logstart_no_change_when_rootpath_is_cwd(fake_env, tmp_path, monkeypatch):
+    """The common case: rootpath == cwd. file_name should be unchanged."""
+    monkeypatch.chdir(tmp_path)
+
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload, rootpath=tmp_path)
+
+    location = ("tests/test_bar.py", 10, "")
+    nodeid = "tests/test_bar.py::test_it"
+
+    plugin.pytest_runtest_logstart(nodeid, location)
+
+    test_data = plugin.in_flight.get(nodeid)
+    assert test_data.file_name == "tests/test_bar.py"
+    assert test_data.location == "tests/test_bar.py:10"
+
+
+def test_runtest_logstart_no_rootpath_leaves_path_untouched(fake_env):
+    """Without a rootpath (e.g. plugin constructed directly), file_name
+    falls back to the raw location, preserving prior behavior."""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    location = ("path/to/test.py", 100, "")
+    nodeid = "path/to/test.py::test_it"
+
+    plugin.pytest_runtest_logstart(nodeid, location)
+
+    test_data = plugin.in_flight.get(nodeid)
+    assert test_data.file_name == "path/to/test.py"
+
+
+def test_pytest_collectreport_normalizes_path_in_monorepo(fake_env, tmp_path, monkeypatch):
+    """Collection errors (pytest_collectreport) should also normalize
+    file_name relative to cwd, consistent with pytest_runtest_logstart."""
+    rootpath = tmp_path / "monorepo"
+    service_dir = rootpath / "services" / "foo"
+    service_dir.mkdir(parents=True)
+
+    monkeypatch.chdir(service_dir)
+
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload, rootpath=rootpath)
+
+    report = CollectReport(
+        nodeid="services/foo/test_bar.py",
+        outcome="failed",
+        longrepr="ModuleNotFoundError: No module named 'bar'",
+        result=None,
+    )
+
+    plugin.pytest_collectreport(report)
+
+    test_data = plugin.payload.data[0]
+    assert test_data.file_name == "test_bar.py"
+
+
 def test_pytest_collectreport_deduplicates(fake_env):
     """Repeated collection errors for the same nodeid produce only one entry.
 

@@ -29,7 +29,7 @@ def pytest_configure(config):
         "add tag to test execution for Buildkite Test Collector. "
         "Both key and value must be a string.")
 
-    plugin = BuildkitePlugin(Payload.init(env))
+    plugin = BuildkitePlugin(Payload.init(env), rootpath=config.rootpath)
     setattr(config, '_buildkite', plugin)
     config.pluginmanager.register(plugin)
 

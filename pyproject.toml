@@ -11,7 +11,7 @@ requires-python = ">=3.9"
 license = "MIT"
 authors = [{ name = "Buildkite", email = "support@buildkite.com" }]
 classifiers = ["License :: OSI Approved :: MIT License", "Framework :: Pytest"]
-dependencies = ["requests>=2", "pytest>=7", "filelock>=3"]
+dependencies = ["requests>=2.31", "pytest>=7", "filelock>=3"]
 
 [project.optional-dependencies]
 dev = ["mock>=4", "check-manifest", "twine; python_full_version >= '3.9.1'", "responses", "pylint"]

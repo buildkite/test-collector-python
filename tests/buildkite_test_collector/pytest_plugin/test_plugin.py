@@ -1,4 +1,7 @@
 import json
+import os
+from types import SimpleNamespace
+
 import pytest
 
 from buildkite_test_collector.collector.payload import Payload, TestData, TestResultFailed, TestResultPassed, TestResultSkipped
@@ -565,3 +568,77 @@ def test_pytest_collectreport_deduplicates(fake_env):
     plugin.pytest_collectreport(report)
 
     assert len(plugin.payload.data) == 1
+
+
+# ---------------------------------------------------------------------------
+# fork-per-test runners (e.g. pytest-forked)
+# ---------------------------------------------------------------------------
+
+def test_finalize_test_skipped_in_forked_child(fake_env):
+    """A fork-per-test child holds a discarded copy of the plugin state, so
+    finalizing there must be a no-op — it would otherwise emit a spurious
+    'no result set at finalization' warning for every test, because the
+    child runs the test protocol with log=False (no logreport in-child).
+    The owning process finalizes from the replayed reports instead.
+    """
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    location = ("", None, "")
+    nodeid = "test_sample.py::test_happy"
+    plugin.pytest_runtest_logstart(nodeid, location)
+
+    # Simulate running in a forked child: the current pid no longer matches
+    # the pid recorded when the plugin was constructed.
+    plugin._owner_pid = os.getpid() + 1
+
+    assert plugin.finalize_test(nodeid) is False
+    assert nodeid in plugin.in_flight
+    assert len(plugin.payload.data) == 0
+
+
+def test_finalize_test_runs_in_owning_process(fake_env):
+    """In the owning process finalize_test behaves as before."""
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    location = ("", None, "")
+    report = TestReport(nodeid="test_sample.py::test_happy", location=location, keywords={}, outcome="passed", longrepr=None, when="call")
+
+    plugin.pytest_runtest_logstart(report.nodeid, location)
+    plugin.pytest_runtest_logreport(report)
+
+    assert plugin.finalize_test(report.nodeid) is True
+    assert report.nodeid not in plugin.in_flight
+    assert len(plugin.payload.data) == 1
+    assert isinstance(plugin.payload.data[0].result, TestResultPassed)
+
+
+def test_execution_tags_captured_at_collection_and_applied_at_finalize(fake_env):
+    """execution_tag markers are captured during collection (which happens in
+    the owning process) and applied at finalization, so they survive
+    fork-per-test runners where pytest_runtest_makereport only fires in the
+    discarded child process.
+    """
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    nodeid = "test_sample.py::test_tagged"
+    marker = SimpleNamespace(args=("team", "backend"))
+    bad_marker = SimpleNamespace(args=("only-one-arg",))
+    item = SimpleNamespace(nodeid=nodeid, iter_markers=lambda name: [marker, bad_marker])
+    untagged_item = SimpleNamespace(nodeid="test_sample.py::test_plain", iter_markers=lambda name: [])
+    config = SimpleNamespace(getoption=lambda name: None)
+
+    plugin.pytest_collection_modifyitems(config, [item, untagged_item])
+
+    assert plugin._tags_by_nodeid == {nodeid: (("team", "backend"),)}
+
+    location = ("", None, "")
+    report = TestReport(nodeid=nodeid, location=location, keywords={}, outcome="passed", longrepr=None, when="call")
+    plugin.pytest_runtest_logstart(nodeid, location)
+    plugin.pytest_runtest_logreport(report)
+    plugin.pytest_runtest_logfinish(nodeid, location)
+
+    assert len(plugin.payload.data) == 1
+    assert plugin.payload.data[0].tags == {"team": "backend"}

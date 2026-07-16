@@ -325,10 +325,13 @@ class BuildkitePlugin:
 
         # Apply tags captured at collection time.  Under fork-per-test
         # runners this is the only tagging point that runs in the owning
-        # process; otherwise it re-applies the same values already set in
-        # pytest_runtest_makereport, which is harmless.
+        # process.  Only fill in keys that are still missing: a marker added
+        # dynamically during the test carries a fresher value (applied in
+        # pytest_runtest_makereport) that must not be overwritten by the
+        # collection-time snapshot.
         for key, value in self._tags_by_nodeid.get(nodeid, ()):
-            test_data = test_data.tag_execution(key, value)
+            if key not in test_data.tags:
+                test_data = test_data.tag_execution(key, value)
 
         if test_data.result is None:
             logger.warning('Test %s has no result set at finalization', nodeid)

@@ -642,3 +642,42 @@ def test_execution_tags_captured_at_collection_and_applied_at_finalize(fake_env)
 
     assert len(plugin.payload.data) == 1
     assert plugin.payload.data[0].tags == {"team": "backend"}
+
+
+def test_collection_time_tags_do_not_overwrite_runtime_tags(fake_env):
+    """A marker added dynamically during the test run (applied in
+    pytest_runtest_makereport) must win over the collection-time snapshot
+    for the same key — finalize_test only fills in keys that are still
+    missing.
+    """
+    payload = Payload.init(fake_env)
+    plugin = BuildkitePlugin(payload)
+
+    nodeid = "test_sample.py::test_tagged"
+    collected_marker = SimpleNamespace(args=("team", "backend"))
+    item = SimpleNamespace(nodeid=nodeid, iter_markers=lambda name: [collected_marker])
+    config = SimpleNamespace(getoption=lambda name: None)
+
+    plugin.pytest_collection_modifyitems(config, [item])
+    assert plugin._tags_by_nodeid == {nodeid: (("team", "backend"),)}
+
+    location = ("", None, "")
+    report = TestReport(nodeid=nodeid, location=location, keywords={}, outcome="passed", longrepr=None, when="call")
+    plugin.pytest_runtest_logstart(nodeid, location)
+    plugin.pytest_runtest_logreport(report)
+
+    # Simulate pytest_runtest_makereport at teardown, where iter_markers now
+    # also yields a marker added dynamically during the test: the "team" key
+    # was re-tagged with a new value, and a brand-new key was added.
+    runtime_item = SimpleNamespace(
+        nodeid=nodeid,
+        iter_markers=lambda name: [
+            SimpleNamespace(args=("team", "frontend")),
+            SimpleNamespace(args=("priority", "high")),
+        ],
+    )
+    call = SimpleNamespace(when="teardown")
+    plugin.pytest_runtest_makereport(runtime_item, call)
+
+    assert len(plugin.payload.data) == 1
+    assert plugin.payload.data[0].tags == {"team": "frontend", "priority": "high"}

@@ -17,6 +17,18 @@ import pytest
 
 pytest.importorskip("pytest_forked")
 
+# pytest-forked needs py.process from the real py package.  In layered
+# environments (e.g. `uv run --with pytest`), pytest's vendored py.py shim
+# (py.error/py.path only) can shadow the real package, breaking pytest-forked
+# itself with an INTERNALERROR — nothing our collector can be tested against.
+_py = pytest.importorskip("py")
+if not hasattr(_py, "process"):
+    pytest.skip(
+        "'py' resolves to pytest's vendored shim without py.process; "
+        "pytest-forked cannot run in this environment",
+        allow_module_level=True,
+    )
+
 pytestmark = pytest.mark.skipif(
     not hasattr(os, "fork"), reason="pytest-forked requires os.fork"
 )

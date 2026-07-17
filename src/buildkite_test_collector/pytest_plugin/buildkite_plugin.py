@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Dict, Tuple
 from uuid import uuid4
 
 from filelock import FileLock
@@ -29,6 +30,9 @@ def _is_subtest_report(report):
 class BuildkitePlugin:
     """Buildkite test collector plugin for Pytest"""
 
+    # 8 attributes of tracking state seems reasonable for this plugin
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, payload, rootpath=None):
         self.payload = payload
         self.rootpath = rootpath
@@ -39,9 +43,30 @@ class BuildkitePlugin:
         # call-phase report from overwriting the failure.
         self._failed_by_subtest = set()
         self._collection_errors_seen = set()
+        # The pid of the process that owns this plugin instance (the one
+        # whose payload is uploaded/saved at pytest_unconfigure).  Runners
+        # that fork per test (e.g. pytest-forked) give each child a copy of
+        # this state that is discarded when the child exits — hooks that
+        # fire in such a child must not finalize tests.  See finalize_test.
+        self._owner_pid = os.getpid()
+        # execution_tag markers captured at collection time, keyed by
+        # nodeid.  Collection happens in the owning process, so these
+        # survive fork-per-test runners where pytest_runtest_makereport
+        # (our usual tagging point) only fires in the discarded child.
+        self._tags_by_nodeid: Dict[str, Tuple[Tuple[str, str], ...]] = {}
 
     def pytest_collection_modifyitems(self, config, items):
-        """pytest_collection_modifyitems hook callback to filter tests by execution_tag markers"""
+        """pytest_collection_modifyitems hook callback to capture execution_tag
+        markers and filter tests by them"""
+        for item in items:
+            tags = tuple(
+                (tag.args[0], tag.args[1])
+                for tag in item.iter_markers("execution_tag")
+                if len(tag.args) == 2
+            )
+            if tags:
+                self._tags_by_nodeid[item.nodeid] = tags
+
         tag_filter = config.getoption("tag_filters")
         if not tag_filter:
             return
@@ -277,11 +302,37 @@ class BuildkitePlugin:
     def finalize_test(self, nodeid):
         """ Attempting to move test data for a nodeid to payload area for upload """
         logger.debug('-> finalize_test nodeid=%s', nodeid)
+
+        # Fork-per-test runners (e.g. pytest-forked) run the test protocol
+        # in a child process holding a copy of this plugin.  That copy is
+        # discarded when the child exits — only the serialized reports are
+        # replayed in the owning process, which finalizes the test with the
+        # real result via pytest_runtest_logreport/logfinish.  Finalizing in
+        # the child would only produce a spurious "no result set" warning
+        # (log=False suppresses in-child logreport), so skip it.
+        if os.getpid() != self._owner_pid:
+            logger.debug(
+                '-> finalize_test: skipping in forked child (pid=%s, owner=%s)',
+                os.getpid(), self._owner_pid
+            )
+            return False
+
         test_data = self.in_flight.get(nodeid)
         if not test_data:
             logger.debug('-> finalize_test: not in flight: %s', nodeid)
             return False
         del self.in_flight[nodeid]
+
+        # Apply tags captured at collection time.  Under fork-per-test
+        # runners this is the only tagging point that runs in the owning
+        # process.  Only fill in keys that are still missing: a marker added
+        # dynamically during the test carries a fresher value (applied in
+        # pytest_runtest_makereport) that must not be overwritten by the
+        # collection-time snapshot.
+        for key, value in self._tags_by_nodeid.get(nodeid, ()):
+            if key not in test_data.tags:
+                test_data = test_data.tag_execution(key, value)
+
         if test_data.result is None:
             logger.warning('Test %s has no result set at finalization', nodeid)
         test_data = test_data.finish()

@@ -17,7 +17,12 @@ steps:
     command: ".buildkite/steps/test"
     env:
       PYTHON_VERSION: "3.13"
-      UV_RUN_FLAGS: "--with pytest>=9"
+      # "--with py" is needed because the uv overlay environment puts
+      # pytest 9's vendored py.py shim (py.error/py.path only) ahead of the
+      # project venv's real py package, which pytest-forked needs for
+      # py.process. Installing py into the same overlay restores normal
+      # package-over-module resolution.
+      UV_RUN_FLAGS: "--with pytest>=9 --with py"
 
   - label: ":python: pylint {{matrix}}"
     command: ".buildkite/steps/lint"

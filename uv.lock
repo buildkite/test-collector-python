@@ -46,12 +46,13 @@ wheels = [
 
 [[package]]
 name = "buildkite-test-collector"
-version = "1.7.0"
+version = "1.7.1"
 source = { editable = "." }
 dependencies = [
     { name = "filelock" },
     { name = "pytest" },
     { name = "requests" },
+    { name = "urllib3" },
 ]
 
 [package.optional-dependencies]
@@ -75,6 +76,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.31" },
     { name = "responses", marker = "extra == 'dev'" },
     { name = "twine", marker = "extra == 'dev'" },
+    { name = "urllib3", specifier = ">=2.7.0" },
 ]
 provides-extras = ["dev"]
 

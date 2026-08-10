@@ -2,7 +2,7 @@
 
 The official Python adapter for [Buildkite Test Engine](https://buildkite.com/platform/test-engine/) which collects information about your tests.
 
-**Supported python versions:** >=3.9
+**Supported Python versions:** >=3.10
 
 ⚒ **Supported test frameworks:** pytest.
 

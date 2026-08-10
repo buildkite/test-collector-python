@@ -2,7 +2,7 @@
 
 Coding guidelines for the buildkite-test-collector Python project - a pytest plugin that collects test execution data and sends it to Buildkite Test Engine.
 
-**Tech Stack**: Python >=3.9, pytest >=7, uv for dependency management
+**Tech Stack**: Python >=3.10, pytest >=7, uv for dependency management
 
 ## Build/Lint/Test Commands
 

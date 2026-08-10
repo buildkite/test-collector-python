@@ -1,10 +1,8 @@
+import os
 from uuid import uuid4
 
-import os
 import mock
 import responses
-import pytest
-import sys
 
 from buildkite_test_collector.collector.run_env import RunEnvBuilder
 from buildkite_test_collector.collector.api import API
@@ -34,7 +32,6 @@ def test_submit_with_invalid_api_key_environment_variable_returns_none(capfd):
     assert captured.err.startswith("buildkite-test-collector - WARNING -")
 
 @responses.activate
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_submit_with_payload_timeout_captures_ConnectTimeout_error(capfd, successful_test):
     responses.add(
         responses.POST,
@@ -55,7 +52,6 @@ def test_submit_with_payload_timeout_captures_ConnectTimeout_error(capfd, succes
     assert "ConnectTimeout" in captured.err
 
 @responses.activate
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_submit_with_payload_timeout_captures_ReadTimeout_error(capfd, successful_test):
     responses.add(
         responses.POST,

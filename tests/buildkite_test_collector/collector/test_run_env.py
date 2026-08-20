@@ -56,6 +56,18 @@ def test_detect_env_with_github_actions_env_vars_returns_the_correct_environment
     assert run_env.job_id is None
     assert run_env.message == "excellent adventure"
 
+def test_detect_env_with_github_actions_missing_repository_or_run_id_omits_url():
+    run_env = RunEnvBuilder({
+        "GITHUB_ACTION": "bring-about-world-peace",
+        "GITHUB_RUN_NUMBER": "42",
+        "GITHUB_RUN_ATTEMPT": "1",
+    }).build()
+
+    assert run_env.ci == "github_actions"
+    assert run_env.url is None
+    assert "url" not in run_env.as_json()
+
+
 def test_detect_env_with_circle_ci_env_vars_returns_the_correct_environment():
     build_num = str(randint(0, 1000))
     workflow_id = str(uuid4())

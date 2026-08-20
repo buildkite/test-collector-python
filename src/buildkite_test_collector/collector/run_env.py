@@ -74,10 +74,14 @@ class RunEnvBuilder:
         repo = self._get_env("GITHUB_REPOSITORY")
         run_id = self._get_env("GITHUB_RUN_ID")
 
+        url = None
+        if repo is not None and run_id is not None:
+            url = f"https://github.com/{repo}/actions/runs/{run_id}"
+
         return RunEnv(
             ci="github_actions",
             key=f"{action}-{run_number}-{run_attempt}",
-            url=f"https://github.com/{repo}/actions/runs/{run_id}",
+            url=url,
             branch=self._get_env("GITHUB_REF"),
             commit_sha=self._get_env("GITHUB_SHA"),
             number=run_number,

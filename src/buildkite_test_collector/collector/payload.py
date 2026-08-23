@@ -257,12 +257,21 @@ class Payload:
     data: Tuple[TestData]
     started_at: Optional[Instant]
     finished_at: Optional[Instant]
+    tags: Dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def init(cls, run_env: RunEnv) -> "Payload":
+    def init(
+        cls, run_env: RunEnv, tags: Optional[Dict[str, str]] = None
+    ) -> "Payload":
         """Create a new instance of payload with the provided RunEnv"""
 
-        return cls(run_env=run_env, data=(), started_at=None, finished_at=None)
+        return cls(
+            run_env=run_env,
+            data=(),
+            started_at=None,
+            finished_at=None,
+            tags=tags or {},
+        )
 
     def as_json(self) -> JsonDict:
         """Convert into a Dict suitable for eventual serialisation to JSON"""
@@ -273,11 +282,16 @@ class Payload:
                 "Unexpected unfinished test data, skipping unfinished test records..."
             )
 
-        return {
+        attrs = {
             "format": "json",
             "run_env": self.run_env.as_json(),
             "data": tuple(map(lambda td: td.as_json(self.started_at), finished_data)),
         }
+
+        if len(self.tags) > 0:
+            attrs["tags"] = self.tags
+
+        return attrs
 
     def push_test_data(self, report: TestData) -> "Payload":
         """Append a test-data to the payload"""

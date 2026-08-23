@@ -107,6 +107,15 @@ class RunEnvBuilder:
             message=self._get_env("TEST_ANALYTICS_COMMIT_MESSAGE"),
         )
 
+    def worker_id_tag(self) -> Dict[str, str]:
+        """Tags every execution in the upload with the ID of the agent running it,
+        so failures can be grouped by worker. Empty when the agent doesn't expose
+        an ID (e.g. outside Buildkite)."""
+        agent_id = self._get_env("BUILDKITE_AGENT_ID")
+        if agent_id is None:
+            return {}
+        return {"ci.worker.id": agent_id}
+
     def _generic_env(self) -> 'RunEnv':
         return RunEnv(
             ci="generic",

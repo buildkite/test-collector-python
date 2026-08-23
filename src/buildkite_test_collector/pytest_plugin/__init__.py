@@ -22,14 +22,16 @@ def spans(request):
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     """pytest_configure hook callback"""
-    env = RunEnvBuilder(os.environ).build()
+    env_builder = RunEnvBuilder(os.environ)
+    env = env_builder.build()
 
     config.addinivalue_line("markers",
         "execution_tag(key, value): "
         "add tag to test execution for Buildkite Test Collector. "
         "Both key and value must be a string.")
 
-    plugin = BuildkitePlugin(Payload.init(env), rootpath=config.rootpath)
+    payload = Payload.init(env, tags=env_builder.worker_id_tag())
+    plugin = BuildkitePlugin(payload, rootpath=config.rootpath)
     setattr(config, '_buildkite', plugin)
     config.pluginmanager.register(plugin)
 

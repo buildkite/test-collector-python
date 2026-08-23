@@ -66,6 +66,33 @@ def test_payload_as_json(payload, successful_test):
     assert json["data"][0]["id"] == str(successful_test.id)
 
 
+def test_payload_init_has_no_tags_by_default(fake_env):
+    payload = Payload.init(fake_env)
+    assert payload.tags == {}
+
+
+def test_payload_init_with_tags(fake_env):
+    payload = Payload.init(fake_env, tags={"ci.worker.id": "agent-123"})
+    assert payload.tags == {"ci.worker.id": "agent-123"}
+
+
+def test_payload_as_json_omits_tags_when_empty(payload, successful_test):
+    payload = payload.push_test_data(successful_test)
+
+    json = payload.as_json()
+
+    assert "tags" not in json
+
+
+def test_payload_as_json_includes_tags_when_present(fake_env, successful_test):
+    payload = Payload.started(Payload.init(fake_env, tags={"ci.worker.id": "agent-123"}))
+    payload = payload.push_test_data(successful_test)
+
+    json = payload.as_json()
+
+    assert json["tags"] == {"ci.worker.id": "agent-123"}
+
+
 def test_test_history_with_no_end_at_is_not_finished():
     hist = TestHistory(start_at=Instant.now(), end_at=None, duration=None)
 

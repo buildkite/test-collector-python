@@ -118,3 +118,18 @@ def test_env_as_json(fake_env):
     expected_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     assert json["language_version"] == expected_version
     assert json["test_runner"] == "pytest"
+
+def test_worker_id_tag_with_agent_id():
+    tag = RunEnvBuilder({"BUILDKITE_AGENT_ID": "agent-123"}).worker_id_tag()
+
+    assert tag == {"ci.worker.id": "agent-123"}
+
+def test_worker_id_tag_without_agent_id():
+    tag = RunEnvBuilder({}).worker_id_tag()
+
+    assert tag == {}
+
+def test_worker_id_tag_with_blank_agent_id():
+    tag = RunEnvBuilder({"BUILDKITE_AGENT_ID": ""}).worker_id_tag()
+
+    assert tag == {}
